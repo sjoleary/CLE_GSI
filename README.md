@@ -1,3 +1,4 @@
+*Raw reads will be uploaded to Short Read Archive (SRA) once analysis of separate project including individuals from data set presented here is complete. Raw and filtered `VCF` files are available from O'Leary/Portnoy upon request.*
 
 Extended methods and results for baseline testing are found in
 
