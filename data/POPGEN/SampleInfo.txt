@@ -1,0 +1,246 @@
+SAMPLE_ID	COLLECT_YEAR	COLLECT_DATE	COLLECT_MONTH	COLLECT_SEASON	SEX	TL	FL	PCL	LOCATION	POP	MAJOR_BAY	MINOR_BAY
+Cleu_Ara053	2014	10/30/2014	oct	Fall	F	923	722	663	520155	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara021	2014	9/16/2014	sept	Fall	F	873	681	620	520262	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara023	2014			Fall	F	1106	893	811	520290	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara002	2014	5/20/2014	may	Spring	M	1257	994	896	520317	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara003	2014	5/20/2014	may	Spring	M	1025	813	740	520317	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara050	2014	10/30/2014	oct	Fall	M	959	746	675	520155	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara051	2014	10/30/2014	oct	Fall	M	928	728	659	520155	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara052	2014	10/30/2014	oct	Fall	M	914	720	654	520155	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara022	2014	9/24/2014	sept	Fall	M	901	744	682	520200	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara010	2014			Spring	M	744	595	539	520200	ARA	Aransas Bay	Aransas Bay
+Cleu_Ara054	2015	6/8/2015	june	Spring	F	692	551	493	570129	ARA	Aransas Bay	Carlos Bay
+Cleu_Ara061	2015	6/8/2015	june	Spring	F	747	606	549	570128	ARA	Aransas Bay	Carlos Bay
+Cleu_Ara007	2014	5/15/2014	may	Spring	F	937	748	670	570102	ARA	Aransas Bay	Carlos Bay
+Cleu_Ara008	2014	5/15/2014	may	Spring	F	912	734	658	570102	ARA	Aransas Bay	Carlos Bay
+Cleu_Ara066	2015	6/8/2015	june	Spring	M	730	608	545	570128	ARA	Aransas Bay	Carlos Bay
+Cleu_Ara041	2014	10/24/2014	oct	Fall	F	881	697	628	512043	ARA	Aransas Bay	Copano Bay
+Cleu_Ara005	2014	5/12/2014	may	Spring	M	860		620	512047	ARA	Aransas Bay	Copano Bay
+Cleu_Ara006	2014	5/12/2014	may	Spring	M	891	710	641	512047	ARA	Aransas Bay	Copano Bay
+Cleu_Ara040	2014	10/24/2014	oct	Fall	M	922	723	653	512064	ARA	Aransas Bay	Copano Bay
+Cleu_Ara043	2014	10/24/2014	oct	Fall	M	863	680	618	512043	ARA	Aransas Bay	Copano Bay
+Cleu_Ara044	2014	10/24/2014	oct	Fall	M	900	713	654	512064	ARA	Aransas Bay	Copano Bay
+Cleu_Ara068	2015	4/27/2015	apr	Spring	F	868	684	613	525077	ARA	Aransas Bay	Mesquite Bay
+Cleu_Ara009	2014	5/15/2014	may	Spring	F	881	713	632	525055	ARA	Aransas Bay	Mesquite Bay
+Cleu_Ara019	2014	9/16/2014	sept	Fall	F	872	679	624	5250156	ARA	Aransas Bay	Mesquite Bay
+Cleu_Ara020	2014	9/30/2014	sept	Fall	F	903	764	660	5250156	ARA	Aransas Bay	Mesquite Bay
+Cleu_Ara030	2014	9/30/2014	sept	Fall	F	787	648	580	525077	ARA	Aransas Bay	Mesquite Bay
+Cleu_Ara001	2014	4/23/2014	apr	Spring	M	1158	904	811	5250158	ARA	Aransas Bay	Mesquite Bay
+Cleu_Ara029	2014	9/30/2014	sept	Fall	M	889	682	625	525077	ARA	Aransas Bay	Mesquite Bay
+Cleu_Ara071	2015	5/13/2015	may	Spring	F	960	778	700	5270273	ARA	Aransas Bay	Port Bay
+Cleu_Ara073	2015	5/13/2015	may	Spring	F	1001	837	741	5270273	ARA	Aransas Bay	Port Bay
+Cleu_Ara072	2015	5/13/2015	may	Spring	M	842	710	635	5270273	ARA	Aransas Bay	Port Bay
+Cleu_Ara074	2015	5/13/2015	may	Spring	M	953	775	700	5210201	ARA	Aransas Bay	Port Bay
+Cleu_Ara069	2015	4/22/2015	apr	Spring	F	1039	813	755	5280310	ARA	Aransas Bay	Redfish Bay
+Cleu_Ara065	2015	5/28/2015	may	Spring	F	889	690	621	531023	ARA	Aransas Bay	St. Charles Bay
+Cleu_Ara004	2014	5/21/2014	may	Spring	F	872	684	614	531554	ARA	Aransas Bay	Sundown Bay
+Cleu_Ara100	2016	6/1/2016	june	Spring	F	793	626	563	5120215	ARA	Aransas Bay	
+Cleu_Ara085	2016	6/7/2016	june	Spring	F	1230	932	845	5280294	ARA	Aransas Bay	
+Cleu_Ara080	2016	6/13/2016	june	Spring	F	1055	845	765	570127	ARA	Aransas Bay	
+Cleu_Ara045	2014	10/8/2014	oct	Fall	F	921	739	671		ARA	Aransas Bay	
+Cleu_Ara077a	2015	10/19/2015	oct	Fall	F	1245	1010	905	5280312	ARA	Aransas Bay	
+Cleu_Ara087	2015	10/19/2015	oct	Fall	F	1023	818	730	5280312	ARA	Aransas Bay	
+Cleu_Ara091	2015	10/19/2015	oct	Fall	F	1025	825	740	5280312	ARA	Aransas Bay	
+Cleu_Ara082	2016	10/25/2016	oct	Fall	F	949	765	697	520153	ARA	Aransas Bay	
+Cleu_Ara076a	2016			Fall	F	1009	802	714	512019	ARA	Aransas Bay	
+Cleu_Ara088	2016			Fall	F	911	755	678	512019	ARA	Aransas Bay	
+Cleu_Ara094	2016			Fall	F	784	638	559	512019	ARA	Aransas Bay	
+Cleu_Ara097	2016			Fall	F	1027	824	724	521155	ARA	Aransas Bay	
+Cleu_Ara038	2014	10/8/2014	oct	Fall	M	1402	1104	1028		ARA	Aransas Bay	
+Cleu_Ara075a	2016	10/5/2016	oct	Fall	M	911	728	655	5120212	ARA	Aransas Bay	
+Cleu_Ara095	2016	10/25/2016	oct	Fall	M	1016	804	696	520153	ARA	Aransas Bay	
+Cleu_Ara086	2016	9/14/2016	sept	Fall	M	916	739	670	512045	ARA	Aransas Bay	
+Cleu_Ara092	2016	9/14/2016	sept	Fall	M	869	684	623	512019	ARA	Aransas Bay	
+Cleu_Ara048	2015	4/15/2015	apr	Spring	F	973	766	694	613073	CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara057	2015	6/1/2015	june	Spring	F	712	583	521		CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara055	2015	6/2/2015	june	Spring	F	759	602	549	6130194	CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara058	2015	6/2/2015	june	Spring	F	745	597	534		CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara062	2015	6/10/2015	june	Spring	F	736	598	534		CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara064	2015	6/10/2015	june	Spring	F	717	572	519		CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara039	2015	5/6/2015	may	Spring	F	1320	1034	936	6130156	CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara042	2014	10/21/2014	oct	Fall	F	956	751	852	6130156	CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara027	2014			Fall	F	1058	835	757	613015	CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara056	2015	6/1/2015	june	Spring	M	762	598	547	613058	CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara060	2015	6/2/2015	june	Spring	M	951	732	674		CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara067	2015	6/2/2015	june	Spring	M	772	614	560		CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara059	2015	6/10/2015	june	Spring	M	1387	1092	1001		CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara063	2015	6/10/2015	june	Spring	M	683	550	496		CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara049	2014				M	931	738	673	613074	CC	Corpus Christi Bay	Corpus Christi Bay
+Cleu_Ara046	2015	5/5/2015	may	Spring	F	921	739	671	626030	CC	Corpus Christi Bay	Nueces Bay
+Cleu_Ara047	2015	5/5/2015	may	Spring	F	1223	968	884	626018	CC	Corpus Christi Bay	Nueces Bay
+Cleu_Ara024	2014	9/30/2014	sept	Fall	F	859	703	632	626015	CC	Corpus Christi Bay	Nueces Bay
+Cleu_Ara025	2014	9/30/2014	sept	Fall	F	902	730	654	626015	CC	Corpus Christi Bay	Nueces Bay
+Cleu_Ara026	2014	9/30/2014	sept	Fall	F	1126	889	803	626015	CC	Corpus Christi Bay	Nueces Bay
+Cleu_Ara028	2014	9/30/2014	sept	Fall	F	1085	852	788	6260100	CC	Corpus Christi Bay	Nueces Bay
+Cleu_Ara070	2015	5/11/2015	may	Spring	M	971	780	708	628464	CC	Corpus Christi Bay	Redfish Bay
+Cleu_Ara098	2016	10/25/2016	oct	Fall	F	1014	796	716	6260?	CC	Corpus Christi Bay	
+Cleu_Ara089	2016	6/4/2016	june	Spring	M	811	632	576	6130?	CC	Corpus Christi Bay	
+Cleu_Ara093	2016	6/9/2016	june	Spring	M	1090	835	745	6130?	CC	Corpus Christi Bay	
+Cleu_Ara090	2016	9/14/2016	sept	Fall	M	967	784	700	6130211	CC	Corpus Christi Bay	
+Cleu_Dic055	2015	9/29/2015	sept	Fall	M	1105	888	800	250681	GAL	Galveston Bay	Bastrop Bay
+Cleu_Dic032	2014	10/29/2014	oct	Fall	F	1221	987	893	2100609	GAL	Galveston Bay	Chocolate Bay
+Cleu_Dic031	2014	10/29/2014	oct	Fall	M	1065	883	802	2100609	GAL	Galveston Bay	Chocolate Bay
+Cleu_Dic018					F	1191	944	857	21440	GAL	Galveston Bay	Drum Bay
+Cleu_Dic006	2014	5/21/2014	may	Spring	F	932	725	666	2150261	GAL	Galveston Bay	East Bay
+Cleu_Dic025	2014	10/9/2014	oct	Fall	F	1190	950	860	2150297	GAL	Galveston Bay	East Bay
+Cleu_Dic005	2014	5/21/2014	may	Spring	M	814	635	570	2150261	GAL	Galveston Bay	East Bay
+Cleu_Dic007	2014	5/21/2014	may	Spring	M	965	775	687	2150261	GAL	Galveston Bay	East Bay
+Cleu_Dic008	2014	5/21/2014	may	Spring	M	1270	1017	923	2150261	GAL	Galveston Bay	East Bay
+Cleu_Dic026	2014	9/15/2014	sept	Fall	M	841	687	612	21500	GAL	Galveston Bay	East Bay
+Cleu_Dic010	2014	6/12/2014	june	Spring	F	995	796	712	2180268	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic036	2015	6/2/2015	june	Spring	F	907	717	694	2180170	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic039	2015	6/2/2015	june	Spring	F	1016	774	705	2180170	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic041	2015	6/2/2015	june	Spring	F	1150	886	807	2180170	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic042	2015	6/2/2015	june	Spring	F	1039	801	723	2180170	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic009	2014	6/12/2014	june	Spring	M	924	737	659	2180268	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic038	2015	6/2/2015	june	Spring	M	1043	794	722	2180170	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic040	2015	6/2/2015	june	Spring	M	1024	790	725	2180170	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic034	2015	6/3/2015	june	Spring	M	1139	884	802	2180170	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic035	2015	6/3/2015	june	Spring	M	1167	884	802	2180170	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic015	2014	9/23/2014	sept	Fall	M	861	687	608	2180167	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic016	2014	9/23/2014	sept	Fall	M	933	739	674	2180167	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic013					M	1243	941	846	21800	GAL	Galveston Bay	Galveston Bay
+Cleu_Dic027	2014	10/30/2014	oct	Fall	F	912	738	665	233016	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic028	2014	10/30/2014	oct	Fall	F	808	624	569	233016	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic029	2014	10/30/2014	oct	Fall	F	914	737	675	233016	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic053	2015	10/6/2015	oct	Fall	F	953	767	685	233055	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic054	2015	10/6/2015	oct	Fall	F	883	709	632	233055	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic021	2014	9/17/2014	sept	Fall	F	890	718	645	2330225	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic023	2014	9/17/2014	sept	Fall	F	880	726	594	2330225	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic024	2014	9/17/2014	sept	Fall	F	885	690	618	2330225	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic043	2015	9/14/2015	sept	Fall	F	920	730	660	2330225	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic045	2015	9/14/2015	sept	Fall	F	816	669	601	2330225	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic047	2015	9/16/2015	sept	Fall	F	896	735	658	2330103	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic048	2015	9/16/2015	sept	Fall	F	851	690	618	2330103	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic049	2015	9/16/2015	sept	Fall	F	957	770	692	2330103	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic057	2015	9/16/2015	sept	Fall	F	910	743	665	2330164	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic030	2014	10/30/2014	oct	Fall	M	759	614	558	233016	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic051	2015	10/6/2015	oct	Fall	M	942	758	681	233055	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic052	2015	10/6/2015	oct	Fall	M	929	750	679	233055	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic020	2014	9/17/2014	sept	Fall	M	890	715	637	2330225	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic022	2014	9/17/2014	sept	Fall	M	862	696	621	2330225	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic044	2015	9/14/2015	sept	Fall	M	902	736	662	2330225	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic050	2015	9/16/2015	sept	Fall	M	935	779	691	2330103	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic056	2015	9/16/2015	sept	Fall	M	1070	865	785	2330164	GAL	Galveston Bay	Trinity Bay
+Cleu_Dic046	2015	5/20/2015	may	Spring	M	1310	1062	948	2350634	GAL	Galveston Bay	West Bay
+Cleu_Dic065	2016	6/8/2016	june	Spring	F	873	686	614	5??	GAL	Galveston Bay	
+Cleu_Dic002	2013				F	910	728	656	200	GAL	Galveston Bay	
+Cleu_Dic004	2013				F	955	768	685	200	GAL	Galveston Bay	
+Cleu_Dic011	2014				F	847	659	587	200	GAL	Galveston Bay	
+Cleu_Dic014	2014				F	919	723	654	200	GAL	Galveston Bay	
+Cleu_Dic033	2015			Fall	F	1079	847	768	170	GAL	Galveston Bay	
+Cleu_Dic066	2016			Fall	F	916	728	650	????	GAL	Galveston Bay	
+Cleu_Dic069	2016			Fall	F	830	655	587		GAL	Galveston Bay	
+Cleu_Dic062	2016	6/8/2016	june	Spring	M	1024	800	728	5??	GAL	Galveston Bay	
+Cleu_Dic063	2016	6/8/2016	june	Spring	M	1053	842	758	5??	GAL	Galveston Bay	
+Cleu_Dic064	2016	6/8/2016	june	Spring	M	699	549	498	5??	GAL	Galveston Bay	
+Cleu_Dic001	2013				M	920	720	662	200	GAL	Galveston Bay	
+Cleu_Dic003	2013				M	880	720	650	200	GAL	Galveston Bay	
+Cleu_Dic012	2014				M	945	744	681	200	GAL	Galveston Bay	
+Cleu_Dic017	2014				M	887	696	624	200	GAL	Galveston Bay	
+Cleu_Dic019	2014				M	982	807	723	200	GAL	Galveston Bay	
+Cleu_Dic072	2015			Fall	M	922	740	675		GAL	Galveston Bay	
+Cleu_Dic068	2016			Fall	M	829	651	583	????	GAL	Galveston Bay	
+Cleu_Dic070	2016			Fall	M	872	683	611	????	GAL	Galveston Bay	
+Cleu_Dic071	2016			Fall	M	891	723	644	????	GAL	Galveston Bay	
+Cleu_Lag002	2014	5/22/2014	may	Spring	M	854	687	626	8230329	LMM	Lower Laguna Madre	Lower Laguna Madre
+Cleu_Mat007	2015	5/20/2015	may	Spring	F	970	775	700	3210222	MAT	Matagorda Bay	Keller Bay
+Cleu_Mat008	2015	5/20/2015	may	Spring	F	920	745	670	3210222	MAT	Matagorda Bay	Keller Bay
+Cleu_Mat017	2016	6/8/2016	june	Spring	F	1516	1183	1075	3360494	MAT	Matagorda Bay	Matagorda Bay
+Cleu_Mat009	2015	10/21/2015	oct	Fall	F	982	793	715	3360165	MAT	Matagorda Bay	Matagorda Bay
+Cleu_Mat011	2015	10/21/2015	oct	Fall	F	1120	900	820	3360180	MAT	Matagorda Bay	Matagorda Bay
+Cleu_Mat012	2015	10/21/2015	oct	Fall	F	951	754	675	3360180	MAT	Matagorda Bay	Matagorda Bay
+Cleu_Mat010	2015	10/21/2015	oct	Fall	M	928	732	655	3360165	MAT	Matagorda Bay	Matagorda Bay
+Cleu_Mat013	2015			Fall	M	946	758	678		MAT	Matagorda Bay	Matagorda Bay
+Cleu_Mat015	2016	6/7/2016	june	Spring	F	1001	802	736	3320158	MAT	Matagorda Bay	Tres Palacios Bay
+Cleu_Mat014	2016	6/7/2016	june	Spring	M	776	619	556	3320158	MAT	Matagorda Bay	Tres Palacios Bay
+Cleu_Mat016	2016	6/7/2016	june	Spring	M	1156	947	842	3320158	MAT	Matagorda Bay	Tres Palacios Bay
+Cleu_Mat003	2013	9/25/2013	sept	Fall	F	804	638	571	300	MAT	Matagorda Bay	
+Cleu_Mat006	2015			Spring	F	875	699	622	300	MAT	Matagorda Bay	
+Cleu_Mat018	2016			Spring	F	1201	948	846		MAT	Matagorda Bay	
+Cleu_Mat019	2016			Spring	F	1172	926	834		MAT	Matagorda Bay	
+Cleu_Mat020	2016			Fall	F	1135	900	812		MAT	Matagorda Bay	
+Cleu_Mat023	2016			Fall	F	1187	937	847		MAT	Matagorda Bay	
+Cleu_Mat025	2016			Fall	F	1160	920	828		MAT	Matagorda Bay	
+Cleu_Mat032	2016			Fall	F	810	648	590		MAT	Matagorda Bay	
+Cleu_Mat035	2016			Fall	F	1137	915	829		MAT	Matagorda Bay	
+Cleu_Mat030	2016	10/5/2016	oct	Fall	M	914	731	662		MAT	Matagorda Bay	
+Cleu_Mat031	2016	10/5/2016	oct	Fall	M	955	709	637		MAT	Matagorda Bay	
+Cleu_Mat001	2013	9/17/2013	sept	Fall	M	740	585	527	300	MAT	Matagorda Bay	
+Cleu_Mat002	2013	9/17/2013	sept	Fall	M	871	701	627	300	MAT	Matagorda Bay	
+Cleu_Mat004	2013	9/25/2013	sept	Fall	M	864	696	627	300	MAT	Matagorda Bay	
+Cleu_Mat005	2015			Spring	M	1080	865	790	300	MAT	Matagorda Bay	
+Cleu_Mat021	2016			Fall	M	1048	842	763		MAT	Matagorda Bay	
+Cleu_Mat022	2016			Fall	M	1056	837	762		MAT	Matagorda Bay	
+Cleu_Mat024	2016			Fall	M	1185	954	863		MAT	Matagorda Bay	
+Cleu_Mat026	2016			Fall	M	993	787	706		MAT	Matagorda Bay	
+Cleu_Mat033	2016			Fall	M	859	680	616		MAT	Matagorda Bay	
+Cleu_Mat034	2016			Fall	M	905	725	648		MAT	Matagorda Bay	
+Cleu_Mat036	2016			Fall	M	1025	805	730		MAT	Matagorda Bay	
+Cleu_Mat037	2016			Fall	M	918	725	654		MAT	Matagorda Bay	
+Cleu_San003	2013	9/18/2013	sept	Fall	F	862	697	620	400	SA	San Antonio Bay	
+Cleu_San006	2013	9/18/2013	sept	Fall	F	937	772	668	400	SA	San Antonio Bay	
+Cleu_San007	2013	9/18/2013	sept	Fall	F	916	739	658	400	SA	San Antonio Bay	
+Cleu_San008	2013	10/9/2013	oct	Fall	M	1091	875	788	400	SA	San Antonio Bay	
+Cleu_San001	2013	9/18/2013	sept	Fall	M		848	765	400	SA	San Antonio Bay	
+Cleu_San002	2013	9/18/2013	sept	Fall	M	918	726	653	400	SA	San Antonio Bay	
+Cleu_San004	2013	9/18/2013	sept	Fall	M	873	700	620	400	SA	San Antonio Bay	
+Cleu_San005	2013	9/18/2013	sept	Fall	M	907	726	550	400	SA	San Antonio Bay	
+Cleu_Sab003	2013	10/14/2013	oct	Fall	F	800	622	564	1700167	SL	Sabine Lake	Sabine Lake
+Cleu_Sab002	2013	10/15/2013	oct	Fall	F	964	740	690	1700156	SL	Sabine Lake	Sabine Lake
+Cleu_Sab009	2014				F	810	642	583	170031	SL	Sabine Lake	Sabine Lake
+Cleu_Sab006	2014	4/29/2014	apr	Spring	M	927	738	672	170056	SL	Sabine Lake	Sabine Lake
+Cleu_Sab014	2014	4/29/2014	apr	Spring	M	966	755	691	170020	SL	Sabine Lake	Sabine Lake
+Cleu_Sab015	2014	4/29/2014	apr	Spring	M	905	713	644	170021	SL	Sabine Lake	Sabine Lake
+Cleu_Sab010	2014	5/20/2014	may	Spring	M	999	795	716	1700146	SL	Sabine Lake	Sabine Lake
+Cleu_Sab001	2013	10/8/2013	oct	Fall	M	938	730	660	170063	SL	Sabine Lake	Sabine Lake
+Cleu_Sab004	2013	10/15/2013	oct	Fall	M	904	718	642	1700169	SL	Sabine Lake	Sabine Lake
+Cleu_Sab005	2013	10/22/2013	oct	Fall	M	864	682	610	170024	SL	Sabine Lake	Sabine Lake
+Cleu_Sab017	2014	10/29/2014	oct	Fall	M	928	759	678	170056	SL	Sabine Lake	Sabine Lake
+Cleu_Sab016	2014	9/24/2014	sept	Fall	M	1205	954	890	170036	SL	Sabine Lake	Sabine Lake
+Cleu_Sab018	2014	9/30/2014	sept	Fall	M	990	800	725	1700157	SL	Sabine Lake	Sabine Lake
+Cleu_Sab026	2015	6/2/2015	june	Spring	F	946	751	684	170037	SL	Sabine Lake	
+Cleu_Sab027	2015	6/2/2015	june	Spring	F	1108	874	795	170037	SL	Sabine Lake	
+Cleu_Sab029	2015	5/12/2015	may	Spring	F	1041	857	774	1710193	SL	Sabine Lake	
+Cleu_Mat029	2016	10/5/2016	oct	Fall	F	901	710	638		SL	Sabine Lake	
+Cleu_Mat027	2016	10/12/2016	oct	Fall	F	1175	956	836		SL	Sabine Lake	
+Cleu_Sab033	2015	9/8/2015	sept	Fall	F	1024	792	726	1700?	SL	Sabine Lake	
+Cleu_Sab030	2015	9/9/2015	sept	Fall	F	855	695	620	1700167	SL	Sabine Lake	
+Cleu_Sab045	2016	9/7/2016	sept	Fall	F	733	596	528	1700NR1	SL	Sabine Lake	
+Cleu_Sab047	2016	9/7/2016	sept	Fall	F	814	651	580	1700TR1	SL	Sabine Lake	
+Cleu_Sab043	2016	9/27/2016	sept	Fall	F	1074	873	778	170046	SL	Sabine Lake	
+Cleu_Sab008	2014				F	791	625	566	100	SL	Sabine Lake	
+Cleu_Sab013	2014				F	1091	856	774	100	SL	Sabine Lake	
+Cleu_Sab039	2016			Fall	F	858	684	623		SL	Sabine Lake	
+Cleu_Sab040	2016			Fall	F	814	655	590		SL	Sabine Lake	
+Cleu_Sab042	2016			Fall	F	1263	1011	894		SL	Sabine Lake	
+Cleu_Sab025	2015	6/2/2015	june	Spring	M	1073	862	781	170037	SL	Sabine Lake	
+Cleu_Sab024	2015	5/12/2015	may	Spring	M	1044	851	769	1700169	SL	Sabine Lake	
+Cleu_Sab028	2015	5/12/2015	may	Spring	M	1265	1003	905	1710193	SL	Sabine Lake	
+Cleu_Sab023	2015	5/19/2015	may	Spring	M	1019	790	723	11200132	SL	Sabine Lake	
+Cleu_Sab049	2016	10/5/2016	oct	Fall	M	972	774	697	1700182	SL	Sabine Lake	
+Cleu_Sab036	2015	9/11/2015	sept	Fall	M	925	740	665	1700?	SL	Sabine Lake	
+Cleu_Sab037	2015	9/11/2015	sept	Fall	M	868	693	622	1700?	SL	Sabine Lake	
+Cleu_Sab044	2016	9/7/2016	sept	Fall	M	917	738	671	1700NR1	SL	Sabine Lake	
+Cleu_Sab048	2016	9/7/2016	sept	Fall	M	877	707	655	1700TR1	SL	Sabine Lake	
+Cleu_Sab007	2014				M	836	664	601	100	SL	Sabine Lake	
+Cleu_Sab011	2014				M	906	727	655	100	SL	Sabine Lake	
+Cleu_Sab012	2014				M	939	762	699	100	SL	Sabine Lake	
+Cleu_Sab032	2015			Fall	M	1028	815	735		SL	Sabine Lake	
+Cleu_Mat028	2016			Fall	M	1054	831	756		SL	Sabine Lake	
+Cleu_Sab038	2016			Fall	M	1133	910	822		SL	Sabine Lake	
+Cleu_Sab041	2016			Fall	M	819	638	564		SL	Sabine Lake	
+Cleu_Sab046	2016			Fall	M	835	664	598	1700NR1	SL	Sabine Lake	
+Cleu_Sab019					M	909	720	665	100	SL	Sabine Lake	
+Cleu_Sab020					M	842	682	607	100	SL	Sabine Lake	
+Cleu_Sab021					M	1257	1017	920	100	SL	Sabine Lake	
+Cleu_Lag001	2014	5/20/2014	may	Spring	F	1230	960	880	700	ULM	Upper Laguna Madre	Upper Laguna Madre
+Cleu_Dic058	2015	10/14/2015	oct	Fall	F	1357	1085	975	250691	GAL	Galveston Bay	Bastrop Bay
+Cleu_Dic073	2016			Fall	F	1110	904	816		GAL		
+Cleu_Mat038	2016			Fall	F	898	712	632		MAT		
+Cleu_Sab022					F	1204	951	862		SL		
+Cleu_Sab031	2015			Fall	M	855	700	625		SL		
+Cleu_Sab034	2015			Fall	M	1083	849	764		SL		
+Cleu_Sab035	2015			Fall	M	900	718	643		SL		
+Cleu_Ara096	2016			Fall	M					ARA		
+Cleu_Ara099	2016			Fall	M	895	711	644		ARA		

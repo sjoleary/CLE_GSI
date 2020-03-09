@@ -1,0 +1,2501 @@
+---
+title: "Nursery origin of a euryhaline predator: Inferences from natural tags: Baseline testing for stock identification using genetic and microchemistry data"
+subtitle: "Extended Methods & Results"
+author: "TC TinHan, SJ O'Leary, DS Portnoy, JR Rooker, C. Gelpy, RJD Wells"
+date: "`r Sys.Date()`"
+output: tint::tintHtml
+bibliography: Bull.bib
+link-citations: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+
+# load libraries and functions ====
+library(tint)
+library(knitr)
+
+# invalidate cache when the package version changes
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	cache.extra = packageVersion("tint"),
+	tidy = FALSE,
+	echo = FALSE
+)
+options(htmltools.dir.version = FALSE)
+
+library(parallel)
+library(doMC)
+library(doParallel)
+library(doSNOW)
+
+library(radiator)
+
+library(randomForestSRC)
+library(assigner)
+library(assignPOP)
+
+library(related)
+source("scr/libraries.R")
+source("scr/ggplot.R")
+source("scr/xtrafunctions.R")
+source("scr/genind.R")
+
+# set levels & colors for nurseries ====
+
+# including SA
+col_nurseries <- c("darkorange", "yellow", 
+                   "darkblue", 
+                   "forestgreen", "limegreen")
+
+nurseries <- c("SL", "GAL",
+               "MAT",
+               "SA", "ARA/CC")
+
+# main nurseries
+col_nurseries1 <- c("darkorange", "yellow", 
+                    "darkblue", 
+                    "limegreen")
+
+nurseries1 <- c("SL", "GAL",
+               "MAT",
+               "ARA/CC")
+
+# all nurseries
+nurseries2 <- c("SL", "GAL",
+               "MAT",
+               "SA", "ARA/CC",
+               "ULM", "LMM")
+
+col_nurseries2 <- c("darkorange", "yellow", 
+                    "darkblue", 
+                    "forestgreen", "limegreen", "darkgreen", 
+                    "maroon4", "purple3")
+
+# set levels + colors for regions ====
+
+col_regions <- c("darkorange", "darkblue", "darkgreen")
+
+regions <- c("North", "Central", "South")
+
+col_regions1 <- c("darkorange", "darkblue", "darkgreen", "maroon4")
+
+regions1 <- c("North", "Central", "South", "other")
+
+# set how numbers are printed
+options(scipen=999)
+
+# functions ====
+
+# update function ====
+accuracy.MC.SOL <- function(dir=NULL){
+
+fileName_vec <- list.files(path = dir, pattern = "Out_*")
+    fileName_vec <- sort(fileName_vec)
+    noFiles <- length(fileName_vec)
+    result01 <- read.table(paste0(dir, fileName_vec[1]), header = T)
+    pops <- names(result01)[4:length(names(result01))]
+    noPops <- length(pops)
+    Var1 <- NULL
+    Var2 <- NULL
+    train.inds <- NULL
+    train.loci <- NULL
+    iters <- NULL
+    assign.rate.all <- NULL
+    assign.rate.each <- as.data.frame(matrix(nrow = 0, ncol = noPops), 
+        stringsAsFactors = F)
+    
+    for (i in 1:noFiles) {
+      
+        oneFileName <- unlist(strsplit(fileName_vec[i], split = "_"))
+        
+        train.inds[i] <- oneFileName[2]
+        train.loci[i] <- oneFileName[3]
+        
+        iters[i] <- unlist(strsplit(oneFileName[4], split = ".txt"))
+        
+        df <- read.table(paste0(dir, fileName_vec[i]), header = T) %>%
+          mutate(origin.pop = ordered(origin.pop, levels = pops),
+                 pred.pop = ordered(pred.pop, levels = pops))
+        
+        # levels(df$origin.pop) <- pops
+        # levels(df$pred.pop) <- pops
+        
+        ctable <- table(df$origin.pop, df$pred.pop)
+        
+        ftable <- as.data.frame(ctable)
+        
+        totalSample <- sum(ftable$Freq)
+        
+        AllcorrectNo <- sum(subset(ftable, Var1 == Var2)$Freq)
+        
+        assign.rate.all[i] <- AllcorrectNo/totalSample
+        popCorrectRate_vec <- NULL
+        for (p in pops) {
+            pop_size <- sum(subset(ftable, Var1 == p)$Freq)
+            if (pop_size == 0) {
+                popCorrectRate = 0
+            }
+            else {
+                popCorrectNo <- subset(subset(ftable, Var1 == 
+                  Var2), Var1 == p)$Freq
+                popCorrectRate <- popCorrectNo/pop_size
+            }
+            popCorrectRate_vec <- c(popCorrectRate_vec, popCorrectRate)
+        }
+        assign.rate.each[i, ] <- popCorrectRate_vec
+    }
+    assign_rate_df <- cbind(train.inds, train.loci, iters, assign.rate.all, 
+        assign.rate.each)
+    names(assign_rate_df)[5:ncol(assign_rate_df)] <- paste0("assign.rate.", 
+        pops)
+    write.table(assign_rate_df, file = paste0(dir, "Rate_of_", 
+        nrow(assign_rate_df), "_tests_", noPops, "_pops.txt"), 
+        quote = F, row.names = F)
+    cat("\n  Correct assignment rates were estimated!!")
+    cat(paste0("\n  A total of ", nrow(assign_rate_df), " assignment tests for ", 
+        noPops, " pops."))
+    cat(paste0("\n  Results were also saved in a 'Rate_of_", 
+        nrow(assign_rate_df), "_tests_", noPops, "_pops.txt' file in the directory."))
+    return(assign_rate_df)
+
+}
+
+```
+
+# Genotyping 
+
+DNA was extracted from dermal tissue using Mag-Bind Blood and Tissue kits. 
+
+For assembly of a reduced representation reference, double digest restriction site associated DNA (ddRAD) using EcoRI and SphI following was performed to create a single library consisting of 24 individuals from all sampled estuaries which was sequenced on a single lane of an Illumina MiSeq DNA sequencer (paired end, 300bp reads). Using longer reads produced from Miseq data for reference assembly increases efficiency during read mapping and SNP calling downstream. Raw reads were demultiplexed using process_radtags [@Catchen2013] and reference contiguous sequence alignments (contigs) reconstructed using the overlapping read assembly option in the dDocent pipeline [@Puritz2014]. Reference assembly was run for a range of combinations of threshold values for K1 (minimum within individual coverage per read), K2 (number of individuals a read must occur in) and c (minimum percent similarity to cluster reads) and a test data set (subset of Hiseq data set described below) mapped to each reference to identify the optimum reference by maximizing the number of reads mapped, minimize the number of reads for which readpairs are mapped to two different contigs. Final parameters selected were K1 = 5, K2 = 6, and c = 0.8. Detailed steps can be found in the `01 Reference_Construction.html`-notebook.
+
+For genotyping, two ddRAD libraries were constructed and sequenced on two separate lanes of an Illumina HiSeq 4000. Raw sequences were demultiplexed using `process_radtags` [@Catchen2013]. Quality trimming, read mapping to the reduced representation reference, and SNP calling were performed using the `dDocent` pipeline [@Puritz2014]. Raw SNPs were filtered using `VCFtools` [@Danecek2011] and custom scripts following O’Leary et al. [-@OLeary2018], setting thresholds for a minimum sequence and genotype quality of 20, a minimum genotype call rate per locus by estuary of 90%, a minor allele count of three, a minimum genotype depth of five, a mean minimum depth of 15, and a mean maximum depth of 180. Individuals with > 10% missing data were removed. SNPs were further filtered based on allele balance, quality/depth ratio, mapping quality ratio of reference/alternate alleles, properly paired status, strand representation, and variance in depth. Finally, SNPs on the same contig were collapsed into haplotypes using `rad_haplotyper` [@Willis2017] producing a final data set consisting of SNP-containing loci (hereafter ‘loci’) for data analysis. In addition, `rad_haplotyper` flags loci exhibiting patterns of indicative of paralogs or genotyping error due to low coverage which were removed from the final data set. Detailed filtering steps and sequentially applied thresholds are found in `02 Genotyping.html`. After haplotyping loci with a global major allele frequency > 95% were removed.
+
+```{r cache=TRUE}
+
+# import genotypes
+df <- read_delim("data/POPGEN/CLE.filtered.genotypes", delim = "\t") %>%
+  select(-pop) %>%
+  column_to_rownames("LIB_ID")
+
+gen <- df2genind(df, sep = ":")
+
+# remove laguna madre individuals
+removeInd <- c("CLE_2A-B09_Cleu_Lag001", "CLE_2A-B10_Cleu_Lag002")
+gen <- gen.ind.rem.Ind(gen, removeInd)
+
+# load sample info as strata
+SampleInfo <- read_delim("data/POPGEN/SampleInfo.txt", delim = "\t")
+
+Inds <- as.data.frame(indNames(gen)) %>%
+  rename(LIB_ID = `indNames(gen)`) %>%
+  separate(LIB_ID, into = c("SP", "LIB", "Cleu", "Sample"), 
+           sep = "_", remove = FALSE, extra = "merge") %>%
+  unite(SAMPLE_ID, 4:5, sep = "_", remove = TRUE)
+
+strata <- left_join(Inds, SampleInfo) %>%
+  distinct() %>%
+  mutate(POP = ifelse(POP %in% c("ARA", "CC"), "ARA/CC", POP)) %>%
+  mutate(REGION = case_when(POP %in% c("SL", "GAL") ~ "North",
+                            POP == "MAT" ~ "Central",
+                            POP %in% c("SA", "ARA/CC") ~ "South",
+                            POP %in% c("ULM", "LMM") ~ "other"),
+         REGION2 = ifelse(POP %in% c("SL", "GAL", "MAT"), "North",
+                                ifelse(POP %in% c("SA", "ARA/CC"), "South", "other"))) %>%
+  mutate(POP = ordered(POP, levels = nurseries2),
+         REGION = ordered(REGION, levels = regions1),
+         REGION2 = ordered(REGION2, levels = c("North", "South", "other")),
+         OVERALL = "overall")
+
+write_delim(strata, "scratch/genotyped.indv")
+
+strata(gen) <- strata
+
+# define groups using strata information
+setPop(gen) <- ~POP
+
+```
+
+`r nInd(gen)` individuals were genotypes for `r nLoc(gen)` loci (`r sum(gen@loc.n.all)` alleles).
+
+# Sample sizes for YOY and Juvniles (genetic data)
+
+A total of `r nrow(strata)` **YOY and juveniles** were genotyped to assess genetic heterogeneity and population differentiation. 
+
+To test for genetic heterogeneity and population structure, YOY and Juveniles were grouped by natal estuaries and regions informed by vertebral chemistry analysis defined as **South** (Corpus Christi Bay, San Antonio Bay, Aransas Bay), **Central** (Matagorda Bay), and **North** (Galveston Bay, Sabine Lake). Regional groupings were based on similarities in hydrological characteristics (e.g. temperature, salinity, sources of freshwater input), expected to produce distinctive signatures in vertebral chemistry. Exploratory analysis of genetic data indicated that the Matagorda Bay might be more appropriately grouped with the North region, therefore a second set of grouping of individuals into **South** and **North** regions was tested.
+
+```{r}
+
+# sample size by pop
+knitr::kable(
+  strata %>%
+    count(POP),
+  caption = "Table 1a: Sample size per estuary (east to west - SL: Sabine Lake, GAL: Galveston Bay, MAT: Matagorda Bay, SA: San Antonio Bay, ARA/CC: Aransas & Corpus Christi Bay)."
+  )
+
+
+# sample size by region
+knitr::kable(
+  strata %>%
+    count(REGION),
+  caption = "Table 1b: Sample size per region (North: SL, GAL; Central: MAT; South: SA, ARA/CC)."
+  )
+
+
+# sample size by region
+knitr::kable(
+  strata %>%
+    count(REGION2),
+  caption = "Table 1c: Sample size per region (North: SL, GAL, MAT; South: SA, ARA/CC)."
+  )
+
+```
+
+
+# Assessment of genetic heterogeneity and population differentiation
+
+`r margin_note("Confidence intervals may provide more reliable biological trends in the data than p-values which require a null hypothesis, e.g. Fst = 0, to permute p-values and can be more helpful with small sample sizes.")`
+
+To test for genetic heterogeneity across estuaries, global FST [@Weir1984] was calculated and a 95% confidence interval (CI) determined using 1,000 iterations (loci sampled with replacement) and permuted p-values calculated using 1,000 iterations using functions implemented in `hierfstat` [@Goudet2005] and `assigner` [@Gosselin2016]. Similarly, pairwise FST 95%-CI, and permuted p-values were calculated to test for pairwise significant differences among estuaries and regions. Finally, the distribution of FST per locus was assessed to identify most informative loci.
+
+## Calculate global allele frequencies.
+
+Allele frequencies across all sampled individuals were calculated to compare allele frequency spectra for major allele and minor alleles. In general, loci variable in < 5% of individuals are not considered informative at a population level.
+
+
+```{r fig.cap="Figure 1: Distribution of major and minor allele frequencies per locus across all individuals.", fig.height=3, fig.width=8, cache=TRUE}
+
+# setPop(gen) <- ~OVERALL
+# 
+# dat <- hierfstat:::.genind2hierfstat(gen)
+# stats <- basic.stats(dat)
+# 
+# f <- stats$pop.freq
+# 
+# freq <- list()
+# 
+# for(l in names(f)){
+# 
+# freq[[l]] <- as.data.frame(f[[l]]) %>%
+#   filter(Var2 == 1) %>%
+#   rename(ALLELE = x,
+#          FRQ = Freq) %>%
+#   select(ALLELE, FRQ)
+# 
+# }
+# 
+# freq <- ldply(freq, data.frame) %>%
+#   rename(LOCUS = `.id`)
+# 
+# write_delim(freq, "results/global_allelefreq.frq", delim = "\t")
+
+freq <- read_delim("results/global_allelefreq.frq", delim = "\t")
+
+major <- freq %>%
+  filter(!FRQ == Inf) %>%
+  group_by(LOCUS) %>%
+  arrange(desc(FRQ)) %>%
+  top_n(1, FRQ)
+
+# write_delim(major, "results/major.frq", delim = "\t")
+
+p1 <- ggplot(major, aes(x = FRQ)) +
+  geom_histogram(binwidth = 0.025, color = "black", fill = "darkorange") +
+  geom_vline(xintercept = 0.95, color = "darkred", linetype = "dashed") +
+  scale_x_continuous(limits = c(0, 1)) +
+  labs(x = "major allele freq", y = "number of loci") +
+  theme_standard
+
+minor <- freq %>%
+  filter(!FRQ == Inf) %>%
+  group_by(LOCUS) %>%
+  arrange(FRQ) %>%
+  top_n(-1, FRQ)
+
+# write_delim(minor, "results/minor.frq", delim = "\t")
+
+p2 <- ggplot(minor, aes(x = FRQ)) +
+  geom_histogram(binwidth = 0.025, color = "black", fill = "darkorange") +
+  scale_y_continuous(limits = c(0, 1500)) +
+  scale_x_continuous(limits = c(0, 1)) +
+  labs(x = "minor allele freq", y = "number of loci") +
+  theme_standard
+
+multiplot(p1, p2, cols = 2)
+
+```
+
+Loci fixed in > 95% of individuals were removed from the data set for Fst analysis and baseline assessment.
+
+```{r}
+
+temp <- major %>%
+  filter(FRQ >= .95)
+
+removeloc <- temp$LOCUS
+
+gen <- genind.rem.loci(gen, removeloc)
+
+write_delim(as.data.frame(indNames(gen)), "scratch/Fst_analysis.ind", delim = "\t")
+
+```
+
+`r nLoc(gen)` loci (`r sum(gen@loc.n.all)` alleles) were retained for further analysis.
+
+## Global Fst
+
+```{r}
+
+# # format genetic data for estuary comparison
+# setPop(gen) <- ~POP
+# 
+# pop <- popNames(gen)
+# 
+# tidy <- tidy_genomic_data(data = gen, filename = NULL)
+# 
+# # calculate fst
+# fst.ci.est <- fst_WC84(data = tidy,
+#                    holdout.samples = NULL,
+#                    pop.levels = pop,
+#                    pairwise = TRUE,
+#                    ci = TRUE,
+#                    iteration.ci = 1000,
+#                    quantiles.ci = c(0.025, 0.975),
+#                    digits = 9,
+#                    parallel.core = 1,
+#                    verbose = TRUE)
+# 
+# write_delim(fst.ci.est$fst.overall, "results/estuaries.global.fst", delim = "\t")
+
+kable(
+  read_delim("results/estuaries.global.fst", delim = "\t"),
+  caption = "Table 2: Global Fst and bootstrapped 95%-confidence intervals (1,000 iterations, sampled with replacement) calculated according to Weir & Cockerham 1984 for individuals grouped by natal estuary."
+)
+
+```
+
+Individuals were permuted across estuaries to determine significance of global Fst.
+
+```{r}
+# 
+# # set up to run in parallel ====
+# library(parallel)
+# library(foreach)
+# library(doMC)
+# 
+# # set number of cores to run in parallel
+# registerDoMC(55)
+# 
+# # format genetic data for estuary comparison
+# setPop(gen) <- ~POP
+# 
+# pop <- popNames(gen)
+# 
+# dat <- genind2hierfstat(gen)
+# dat_rand <- dat
+# 
+# # number of permutations
+# nperm <- 1000
+# 
+# # create vector with locus names
+# loc <- locNames(gen)
+# 
+# # calculate F-statistics for genotypes permuted betw pop ====
+# start_time <- Sys.time()
+# 
+# fst.glob.sim <- foreach(1:nperm) %dopar%  {
+# 
+# dat_rand$pop <- sample(dat_rand$pop, replace = FALSE)
+# 
+# wc(dat_rand)
+# 
+# }
+# 
+# end_time <- Sys.time()
+# 
+# end_time - start_time # Time difference of 1.344 hours (45 cores)
+# 
+# # calculate F-statistics for empirical data ====
+# fst.glob.obs <- wc(dat)
+# 
+# fst.glob.obs
+# 
+# # parse permuted Fst (all loci) ====
+# sim_fst <- list()
+# 
+# for(i in 1:nperm){
+# 
+# sim_fst[[i]] <- as.data.frame(fst.glob.sim[[i]]$FST) %>%
+#   rename(SIM_FST = `fst.glob.sim[[i]]$FST`)
+# 
+# }
+# 
+# # calculate p-value ====
+# sim_fst <- ldply(sim_fst, data.frame)
+# 
+# obs_fst <- fst.glob.obs$FST
+# 
+# larger <- filter(sim_fst, SIM_FST > obs_fst)
+# larger <- nrow(larger)
+# 
+# pval <- larger/nperm
+# 
+# # write to file ====
+# STAT <- c("OBS_FST", "PVAL", "NPERM")
+# VALUE <- c(obs_fst, pval, nperm)
+# 
+# results <- data.frame(STAT, VALUE)
+# 
+# write_delim(results, "results/estuary_sign.globalfst", delim = "\t")
+ 
+p <- read_delim("results/estuary_sign.globalfst", delim = "\t") %>%
+  filter(STAT == "PVAL")
+
+```
+
+**Significant genetic heterogeneity was detected among estuaries along the Texas coast (p = `r p$VALUE`).**
+
+## Pairwise Fst: Estuary comparisons
+
+```{r}
+
+# write_delim(fst.ci.est$pairwise.fst, "results/estuaries.pairwise.fst", delim = "\t")
+
+kable(
+  read_delim("results/estuaries.pairwise.fst", delim = "\t") %>%
+    arrange(desc(CI_LOW)) %>%
+    select(-N_MARKERS),
+  caption = "Table 3a: Pairwise Fst and bootstrapped 95%-CI (1000 iterations, sampled with replacement) calculated according Weir & Cockerham (1984)."
+)
+
+# col <- colnames(fst.ci.est$pairwise.fst.full.matrix)
+# 
+# row <- rownames(fst.ci.est$pairwise.fst.full.matrix)
+# 
+# fst_matrix <- matrix(as.numeric(unlist(fst.ci.est$pairwise.fst.full.matrix)),nrow=nrow(fst.ci.est$pairwise.fst.full.matrix))
+# 
+# colnames(fst_matrix) <- col
+# rownames(fst_matrix) <- row
+# 
+# temp <- as.data.frame(fst_matrix) %>%
+#   rownames_to_column("ESTUARY")
+# 
+# write_delim(temp, "results/estuaries.matrix.fst", delim = "\t")
+
+kable(
+  read_delim("results/estuaries.matrix.fst", delim = "\t"),
+  caption = "Table 3b: Pairwise Fst among all pairs of estuaries"
+)
+
+```
+
+Individuals were permuted among estuaries to calculate pairwise Fst (Weir & Cockerham 1984) and determine significance.
+
+```{r}
+
+# # set groups to compare ====
+# setPop(gen) <- ~POP
+#  
+# # number of groups being compared
+# n <- length(popNames(gen))
+#  
+# # compute Fst matrix ====
+# dat <- genind2hierfstat(gen)
+# mat.obs <- pairwise.WCfst(dat)
+#  
+# temp <- as.data.frame(mat.obs) %>%
+#    rownames_to_column("GRP1") %>%
+#    gather(key = "GRP2", value = "obsFst", 2:(n+1)) %>%
+#    filter(GRP1 != GRP2)
+#  
+# write_delim(temp, "results/estuaryWC84.fst", delim = "\t")
+ 
+# # calculate pairwise Fst for individuals permuted between groups ====
+#  
+# # create list with NPERM matrices of permuted Fst values
+# NBPERM <- 1000
+#  
+# # permute individuals between groups for each pairwise comparison
+# mat.perm <- mclapply(1:NBPERM, function(i) pairwise.WCfst(mutate(dat, pop = sample(pop, replace = FALSE))), mc.cores = 20)
+#  
+# # create data frame with permuted values
+# fst_perm <- list()
+#  
+# for(i in 1:length(mat.perm)){
+#  
+# fst <- as.data.frame(mat.perm[[i]]) %>%
+#    rownames_to_column("GRP1") %>%
+#    gather(key = "GRP2", value = "ppFST", 2:(n+1)) %>%
+#    filter(GRP1 != GRP2)
+#  
+# fst_perm[[i]] <- fst
+#  
+# }
+#  
+# fst_perm <- ldply(fst_perm, data.frame)
+#  
+# write_delim(fst_perm, "results/estuaryWC84.fstperm", delim = "\t")
+ 
+# # get p-values for each pairwise comparison ====
+#  
+# # use randtest to determine p-value (i.e. is observed value different from permuted values)
+# # p.globs.p<-sum(gglobs.p>=gglobs.p[nperm+1])/(nperm+1)  p-val is sum(times observed value is > permuted value / total permutations)
+#  
+# ppfst_pval <- list()
+#  
+# for(i in 1:(nrow(mat.obs)-1)){
+#  
+#   for(j in 2:nrow(mat.obs)){
+#  
+#     ppfst_pval[[paste(rownames(mat.obs)[i], rownames(mat.obs)[j], sep = "-")]] <- as.randtest(na.omit(sapply(1:NBPERM, function(k) mat.perm[[k]][i,j])), mat.obs[i,j], alter = "greater")
+#  
+#     }
+#  
+# }
+#  
+# # create data frame with p-values
+# COMP <- names(ppfst_pval)
+#  
+# PVAL <- rep(NA, length(ppfst_pval))
+#  
+# for (i in 1:length(PVAL)) {
+#  
+#    PVAL[i] <- ppfst_pval[[i]]$pvalue
+#  
+# }
+#  
+# pval <- data.frame(COMP, PVAL)
+#  
+# write_delim(pval, "results/estuaryWC84.fstpval", delim = "\t")
+
+# RESULTS ====
+
+fst_obs <- read_delim("results/estuaryWC84.fst", delim = "\t") %>%
+   unite(COMP, 1:2, sep = "-", remove = FALSE)
+ 
+# fst_perm <- read_delim("results/estuaryWC84.fstperm", delim = "\t") %>%
+#    unite(COMP, 1:2, sep = "-", remove = FALSE)
+
+fst_pval <- read_delim("results/estuaryWC84.fstpval", delim = "\t") %>%
+   separate(COMP, into = c("GRP1", "GRP2"), sep = "-", remove = FALSE)
+
+fst_sign <- left_join(fst_obs, fst_pval) %>%
+   filter(!is.na(PVAL)) %>%
+   distinct(obsFst, .keep_all = TRUE)
+
+# pairwise Fst table
+kable(
+   as.data.frame(fst_sign) %>%
+     arrange((PVAL)) %>%
+     select(-COMP),
+   caption = "Table 3c: Pairwise Fst and permuted p-values (individuals shuffled across estuaries, 1,000 permutations)"
+)
+
+```
+
+Locus-specific Fst (individuals grouped by estuary).
+
+```{r fig.cap="Figure 2: Distribution of locus-specific Fst-values", fig.height=4, fig.width=5}
+
+# fst_loc <- fst.ci.est$fst.markers
+# 
+# write_delim(fst_loc, "results/estuaries.fst.perloc", delim = "\t")
+
+fst_loc <- read_delim("results/estuaries.fst.perloc", delim = "\t")
+
+ggplot(fst_loc, aes(x = FST)) +
+  geom_histogram(binwidth = 0.005, color = "black", fill = "darkorange") +
+  scale_y_sqrt() +
+  theme_standard
+
+kable(
+  count(fst_loc, FST > 0),
+  caption = "Table 4a: Number of loci with Fst > 0."
+)
+
+kable(
+  count(fst_loc, FST > 0.01),
+  caption = "Table 4b: Number of loci with Fst > 0.01"
+)
+
+```
+
+
+## Pairwise Fst: Regional comparison (North, Central, South)
+
+```{r}
+
+# # prepare genetic data
+# setPop(gen) <- ~REGION
+# 
+# pop <- popNames(gen)
+# 
+# tidy <- tidy_genomic_data(data = gen, filename = NULL)
+# 
+# # calculate fst
+# fst.ci.reg <- fst_WC84(data = tidy,
+#                    holdout.samples = NULL,
+#                    pop.levels = pop,
+#                    pairwise = TRUE,
+#                    ci = TRUE,
+#                    iteration.ci = 1000,
+#                    quantiles.ci = c(0.025, 0.975),
+#                    digits = 9,
+#                    parallel.core = 30,
+#                    verbose = TRUE)
+# 
+# write_delim(fst.ci.reg$pairwise.fst, "results/region.pairwiseCI.fst", delim = "\t")
+
+# print CIs
+kable(
+  read_delim("results/region.pairwiseCI.fst", delim = "\t") %>%
+    arrange(desc(CI_LOW)) %>%
+    select(-N_MARKERS),
+  caption = "Table 5a: Pairwise Fst and bootstrapped 95% confidence intervals (1000 iterations, sampled with replacement) among regions calculated according to Weir & Cockerham 1984."
+)
+
+# col <- colnames(fst.ci.reg$pairwise.fst.full.matrix)
+# 
+# row <- rownames(fst.ci.reg$pairwise.fst.full.matrix)
+# 
+# fst_matrix <- matrix(as.numeric(unlist(fst.ci.reg$pairwise.fst.full.matrix)),nrow=nrow(fst.ci.reg$pairwise.fst.full.matrix))
+# 
+# colnames(fst_matrix) <- col
+# rownames(fst_matrix) <- row
+# 
+# temp <- as.data.frame(fst_matrix) %>%
+#   rownames_to_column("REGION")
+# 
+# write_delim(temp, "results/region.pairwise.fst", delim = "\t")
+
+# pairwise matrix
+kable(
+  read_delim("results/region.pairwise.fst", delim = "\t"),
+  caption = "Table 5b: Pairwise Fst among all pairs of regions."
+)
+
+```
+
+Individuals were permuted among regions to determine significance of pairwise Fst.
+
+```{r}
+
+# # set groups to compare ====
+# setPop(gen) <- ~REGION
+# 
+# # number of groups being compared
+# n <- length(popNames(gen))
+# 
+# # compute Fst matrix ====
+# dat <- genind2hierfstat(gen)
+# mat.obs <- pairwise.WCfst(dat)
+# 
+# temp <- as.data.frame(mat.obs) %>%
+#   rownames_to_column("GRP1") %>%
+#   gather(key = "GRP2", value = "obsFst", 2:(n+1)) %>%
+#   filter(GRP1 != GRP2)
+# 
+# write_delim(temp, "results/regionWC84.fst", delim = "\t")
+# 
+# # calculate pairwise Fst for individuals permuted between groups ====
+# 
+# # create list with NPERM matrices of permuted Fst values
+# NBPERM <- 1000
+# 
+# # permute individuals between groups for each pairwise comparison
+# mat.perm <- mclapply(1:NBPERM, function(i) pairwise.WCfst(mutate(dat, pop = sample(pop, replace = FALSE))), mc.cores = 45)
+# 
+# # create data frame with permuted values
+# fst_perm <- list()
+# 
+# for(i in 1:length(mat.perm)){
+# 
+# fst <- as.data.frame(mat.perm[[i]]) %>%
+#   rownames_to_column("GRP1") %>%
+#   gather(key = "GRP2", value = "ppFST", 2:(n+1)) %>%
+#   filter(GRP1 != GRP2)
+# 
+# fst_perm[[i]] <- fst
+# 
+# }
+# 
+# fst_perm <- ldply(fst_perm, data.frame)
+# 
+# write_delim(fst_perm, "results/regionWC84.fstperm", delim = "\t")
+# 
+# # get p-values for each pairwise comparison ====
+# 
+# # use randtest to determine p-value (i.e. is observed value different from permuted values)
+# # p.globs.p<-sum(gglobs.p>=gglobs.p[nperm+1])/(nperm+1)  p-val is sum(times observed value is > permuted value / total permutations)
+# 
+# ppfst_pval <- list()
+# 
+# for(i in 1:(nrow(mat.obs)-1)){
+# 
+#  for(j in 2:nrow(mat.obs)){
+# 
+#    ppfst_pval[[paste(rownames(mat.obs)[i], rownames(mat.obs)[j], sep = "-")]] <- as.randtest(na.omit(sapply(1:NBPERM, function(k) mat.perm[[k]][i,j])), mat.obs[i,j], alter = "greater")
+# 
+#    }
+# 
+# }
+# 
+# # create data frame with p-values
+# COMP <- names(ppfst_pval)
+# 
+# PVAL <- rep(NA, length(ppfst_pval))
+# 
+# for (i in 1:length(PVAL)) {
+# 
+#   PVAL[i] <- ppfst_pval[[i]]$pvalue
+# 
+# }
+# 
+# pval <- data.frame(COMP, PVAL)
+# 
+# write_delim(pval, "results/regionWC84.fstpval", delim = "\t")
+
+fst_obs <- read_delim("results/regionWC84.fst", delim = "\t") %>%
+  unite(COMP, 1:2, sep = "-", remove = FALSE)
+
+fst_perm <- read_delim("results/regionWC84.fstperm", delim = "\t") %>%
+  unite(COMP, 1:2, sep = "-", remove = FALSE)
+  
+fst_pval <- read_delim("results/regionWC84.fstpval", delim = "\t") %>%
+  separate(COMP, into = c("GRP1", "GRP2"), sep = "-", remove = FALSE)
+
+fst_sign <- left_join(fst_obs, fst_pval) %>%
+  filter(!is.na(PVAL)) %>%
+  distinct(obsFst, .keep_all = TRUE)
+
+kable(
+  as.data.frame(fst_sign) %>%
+    arrange(PVAL) %>%
+    select(-COMP),
+  caption = "Table 5c: Significance of pairwise Fst between regions assessed by permuting individuals across regions (1,000 permutations)"
+)
+
+```
+
+Assess locus-specific Fst-values.
+
+```{r fig.cap="Figure 3: Distribution of locus-specific Fst-values for individuals grouped by geographic region", fig.height=4, fig.width=5}
+
+# fst_loc <- fst.ci.reg$fst.markers
+# 
+# write_delim(fst_loc, "results/region.fst.perloc", delim = "\t")
+
+fst_loc <- read_delim("results/region.fst.perloc", delim = "\t")
+
+ggplot(fst_loc, aes(x = FST)) +
+  geom_histogram(binwidth = 0.005, color = "black", fill = "darkorange") +
+  scale_y_sqrt() +
+  theme_standard
+
+kable(
+  count(fst_loc, FST > 0),
+  caption = "Table 6a: Number of loci with Fst > 0"
+)
+
+
+
+kable(
+  count(fst_loc, FST > 0.01),
+  caption = "Table 6b: Number of loci with Fst > 0.01"
+)
+
+```
+
+
+## Pairwise Fst: Regional comparison (North, South)
+
+```{r}
+
+# # prepare genetic data
+# setPop(gen) <- ~REGION2
+# 
+# pop <- popNames(gen)
+# 
+# tidy <- tidy_genomic_data(data = gen, filename = NULL)
+# 
+# # calculate fst
+# fst.ci.reg <- fst_WC84(data = tidy,
+#                   holdout.samples = NULL,
+#                   pop.levels = pop,
+#                   pairwise = TRUE,
+#                   ci = TRUE,
+#                   iteration.ci = 1000,
+#                   quantiles.ci = c(0.025, 0.975),
+#                   digits = 9,
+#                   parallel.core = 55,
+#                   verbose = TRUE)
+# 
+# write_delim(fst.ci.reg$pairwise.fst, "results/region2.pairwise.fstCI", delim = "\t")
+
+kable(
+  read_delim("results/region2.pairwise.fstCI", delim = "\t") %>%
+    select(-N_MARKERS),
+  caption = "Table 7a: Pairwise Fst and bootstrapped 95% confidence intervals between regions calculated according to Weir & Cockerham 1984."
+)
+
+
+```
+
+Individuals permuted between regions to calculate pairwise Fst and determine significance.
+
+```{r}
+
+# # set groups to compare ====
+# setPop(gen) <- ~REGION2
+# 
+# # number of groups being compared
+# n <- length(popNames(gen))
+# 
+# # compute Fst matrix ====
+# dat <- genind2hierfstat(gen)
+# mat.obs <- pairwise.WCfst(dat)
+# 
+# temp <- as.data.frame(mat.obs) %>%
+#   rownames_to_column("GRP1") %>%
+#   gather(key = "GRP2", value = "obsFst", 2:(n+1)) %>%
+#   filter(GRP1 != GRP2)
+# 
+# write_delim(temp, "results/region2WC84.fst", delim = "\t")
+# 
+# # calculate pairwise Fst for individuals permuted between groups ====
+# 
+# # create list with NPERM matrices of permuted Fst values
+# NBPERM <- 1000
+# 
+# # permute individuals between groups for each pairwise comparison
+# mat.perm <- mclapply(1:NBPERM, function(i) pairwise.WCfst(mutate(dat, pop = sample(pop, replace = FALSE))), mc.cores = 45)
+# 
+# # create data frame with permuted values
+# fst_perm <- list()
+# 
+# for(i in 1:length(mat.perm)){
+# 
+# fst <- as.data.frame(mat.perm[[i]]) %>%
+#   rownames_to_column("GRP1") %>%
+#   gather(key = "GRP2", value = "ppFST", 2:(n+1)) %>%
+#   filter(GRP1 != GRP2)
+# 
+# fst_perm[[i]] <- fst
+# 
+# }
+# 
+# fst_perm <- ldply(fst_perm, data.frame)
+# 
+# write_delim(fst_perm, "results/region2WC84.fstperm", delim = "\t")
+# 
+# # get p-values for each pairwise comparison ====
+# 
+# # use randtest to determine p-value (i.e. is observed value different from permuted values)
+# # p.globs.p<-sum(gglobs.p>=gglobs.p[nperm+1])/(nperm+1)  p-val is sum(times observed value is > permuted value / total permutations)
+# 
+# ppfst_pval <- list()
+# 
+# for(i in 1:(nrow(mat.obs)-1)){
+# 
+#  for(j in 2:nrow(mat.obs)){
+# 
+#    ppfst_pval[[paste(rownames(mat.obs)[i], rownames(mat.obs)[j], sep = "-")]] <- as.randtest(na.omit(sapply(1:NBPERM, function(k) mat.perm[[k]][i,j])), mat.obs[i,j], alter = "greater")
+# 
+#    }
+# 
+# }
+# 
+# # create data frame with p-values
+# COMP <- names(ppfst_pval)
+# 
+# PVAL <- rep(NA, length(ppfst_pval))
+# 
+# for (i in 1:length(PVAL)) {
+# 
+#   PVAL[i] <- ppfst_pval[[i]]$pvalue
+# 
+# }
+# 
+# pval <- data.frame(COMP, PVAL)
+# 
+# write_delim(pval, "results/region2WC84.fstpval", delim = "\t")
+
+fst_obs <- read_delim("results/region2WC84.fst", delim = "\t") %>%
+  unite(COMP, 1:2, sep = "-", remove = FALSE)
+
+fst_perm <- read_delim("results/region2WC84.fstperm", delim = "\t") %>%
+  unite(COMP, 1:2, sep = "-", remove = FALSE)
+  
+fst_pval <- read_delim("results/region2WC84.fstpval", delim = "\t") %>%
+  separate(COMP, into = c("GRP1", "GRP2"), sep = "-", remove = FALSE)
+
+fst_sign <- left_join(fst_obs, fst_pval) %>%
+  filter(!is.na(PVAL)) %>%
+  distinct(obsFst, .keep_all = TRUE)
+
+kable(
+  as.data.frame(fst_sign) %>%
+    arrange(PVAL),
+  caption = "Table 7b: Significance of pairwise Fst between North/South estuaries (1,000 permutations)."
+)
+
+```
+
+Assess locus-specific Fst-values.
+
+```{r gig.cap="Figure 4: Distribution of locus-specific Fst values for individuals grouped by region.", fig.height=4, fig.width=5}
+
+# fst_loc <- fst.ci.reg$fst.markers
+# 
+# write_delim(fst_loc, "results/region2.fst.perloc", delim = "\t")
+
+fst_loc <- read_delim("results/region2.fst.perloc", delim = "\t")
+
+ggplot(fst_loc, aes(x = FST)) +
+  geom_histogram(binwidth = 0.005, color = "black", fill = "darkorange") +
+  scale_y_sqrt() +
+  theme_standard
+
+kable(
+  count(fst_loc, FST > 0),
+  caption = "Table 8a: Number of loci with Fst > 0"
+)
+
+kable(
+  count(fst_loc, FST > 0.01),
+  caption = "Table 8b: Number of loci with Fst > 0"
+)
+
+```
+
+
+# Identify YOY (Age 0 individuals)
+
+Aging data from vertebrae was used to identify YOY caught in each estuary (Age 0).
+
+```{r}
+
+df <- read_delim("data/POPGEN/BullShark_MetaData.txt", delim = "\t") %>%
+  select(SAMPLE_ID, AGE)
+
+AGE0 <- strata %>%
+  left_join(df) %>%
+  filter(AGE == 0)
+
+write_delim(AGE0, "results/AGE0_genotyped.indv", delim = "\t")
+
+knitr::kable(
+  AGE0 %>%
+    count(POP),
+  caption = "Table 9a: Sample size per estuary (east to west - SL: Sabine Lake, GAL: Galveston Bay, MAT: Matagorda Bay, SA: San Antonio Bay, ARA/CC: Aransas & Corpus Christi Bay."
+)
+
+
+knitr::kable(
+  AGE0 %>%
+    count(REGION),
+  caption = "Table 9b: Sample size per region (North: SL, GAL; Central: MAT; South: SA, ARA/CC)."
+)
+
+
+knitr::kable(
+  AGE0 %>%
+    count(REGION2),
+  caption = "Table 9c: Sample size per region (North: SL, GAL, MAT; South: SA, ARA/CC)."
+)
+
+```
+
+For purposes of baseline assessment, **only YOY** were retained in the data set to ensure that they were caught in their natal estuary. For genetic baseline assessment all genotyped YOY (N = `r nrow(AGE0)`) were included, for assessment of microchemistry and combined data sets YOY with both genetic and microchemistry data available were used.
+
+```{r}
+
+# retain only YOY
+keepInd <- as.character(AGE0$LIB_ID)
+
+gen <- gen[row.names(gen@tab) %in% keepInd]
+
+```
+
+# Baseline testing for genetic stock assignment
+
+The ability to assign individuals of unknown origins to source populations was evaluated by testing the robustness of baseline data sets for natal estuaries and regions for a genetic and a combined data set of genetic and microchemistry data) using `assignPOP` [@Chen2018], which uses a supervised machine-learning framework to evaluate the discriminatory power of baseline data. 
+
+The implemented Monte-Carlo cross-validation estimates mean and variance of assignment accuracy by resampling a set of training individuals and loci to create a baseline and then determine how many test individuals are correctly assigned, resolving bias due to self-assignment [@Anderson2010; @Waples2010]. The assignment ability may be affected by lack of distinct differences among baseline groups of individuals, noisy data, or small data sets (< 20 – 50) resulting in inaccurate estimates of allele frequencies. 
+
+Low variance loci are likely uninformative, and frequencies of rare alleles are more difficult to estimate accurately. Therefore, loci with a major allele frequency > 95% or > 5% missing data were removed and San Antonio Bay (n = 6 individuals) was not assessed for estuary comparisons, though San Antonio individuals were included in the southern regional baselines. 
+
+To eliminate bias associated with unbalanced population sizes [@Puechmaille2016; @Wang2017] the same number of training individuals was drawn from each population for assignment tests of estuaries and regions, i.e. the number of training individuals was consistent but the number of (remaining) test individuals being assigned varied by baseline. 
+
+To test if subsets of highly informative loci have equal or higher discriminatory power, varying proportions of loci ranked by FST were used as training loci. 
+
+`assignPOP` uses a machine-learning framework to create predictive models, including linear discriminant analysis (`lda`), support vector machine (`svm`), naïve Bayes, decision tree and random forest. To identify the best model for each data set each combination of training individuals/loci was drawn 10 times to calculate assignment accuracy overall and for individual baselines in a preliminary analysis; best combination of predictive model and proportion of loci used was determined based on assignment accuracy and precision. 
+
+Initial comparisons indicated the `svm` and `lda` models are most appropriate for genetic, microchemistry, and combined data sets, only the results for these models are presented here.
+
+The final assignment tests for best model identified were based on 30 iterations as recommended by Chen et al. 2018.
+
+
+## Estuary baselines
+
+**GENETIC DATA**
+
+```{r}
+
+# remove loci with > 5% missing data
+temp <- missingno(gen, type = "loci", cutoff = 0.05, quiet = FALSE)
+
+# remove populations with too small number of samples
+setPop(temp) <- ~POP
+
+gen_est <- seppop(temp)
+
+gen_est <- gen_est[c("ARA/CC", "GAL", "MAT", "SL")]
+
+gen_est <- gen_est[lengths(gen_est) != 0]
+
+gen_est <- repool(gen_est)
+
+write_delim(as.data.frame(indNames(gen_est)), "scratch/est_gen_genotyped.indv", delim = "\t")
+
+# 
+# # write genepop file
+# tidy <- tidy_genomic_data(data = gen_est, filename = NULL)
+# 
+# tidy <- tidy %>%
+#   dplyr::select(1:6)
+# 
+# write_genepop(data = tidy,
+#               filename = "data/POPGEN/CLE_by_est",
+#               genepop.header = "CLE grouper by estuary, major allele frq < 95%")
+# 
+# # import file in assignPOP format
+# POPassign <- read.Genepop("data/POPGEN/CLE_by_est_genepop.gen",
+#                            pop.names = c("ARA", "GAL", "MAT", "SL"),
+#                            haploid = FALSE)
+
+```
+
+Baseline assessments for estuaries were conducted using `r nLoc(gen_est)` loci (`r sum(gen_est@loc.n.all)` alleles) genotyped for `r nInd(gen_est)` individuals.
+
+Baselines for genetic data were established by randomly drawing 20 training individuals and a subset of the top 1%, 5%, 10%, 25%, 50%, 75%, 90%, and 100% of of loci ranked by Fst and assigning the remaining individuals for 30 iterations for each combination of training individuals and loci.
+
+```{r eval=FALSE, echo=TRUE}
+
+assign.MC(x = POPassign,
+          train.inds = 20,
+          train.loci = c(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="svm",
+          pca.method = "original",
+          scaled = FALSE,
+          dir="results/estuary_svm/",
+          multiprocess = TRUE,
+          processors = 55)
+
+assign.MC(x = POPassign,
+          train.inds = 20,
+          train.loci = c(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="lda",
+          pca.method = "original",
+          scaled = FALSE,
+          dir="results/estuary_lda/",
+          multiprocess = TRUE,
+          processors = 55)
+
+```
+
+Assignment accuracy for overall and individual nurseries was determined by evaluating the proportion of individuals successfully assigned back to their natal estuaries.
+
+```{r include=FALSE}
+
+paths <- c("results/estuary_svm/", "results/estuary_lda/")
+
+# calculate assignment accuracy
+baselines_estuaries <- list()
+
+for (p in paths){
+  
+  baselines_estuaries[[p]] <- accuracy.MC.SOL(dir = p)
+
+}
+
+MC <- ldply(baselines_estuaries, data.frame) %>%
+  rename(MODEL = `.id`,
+         `ARA/CC` =  `assign.rate.ARA`,
+         GAL = `assign.rate.GAL`,
+         MAT = `assign.rate.MAT`,
+         SL = `assign.rate.SL`,
+         `Overall-Est` = `assign.rate.all`) %>%
+  gather(key = ESTUARY, value = PERC_ASSIGN, 5:9) %>%
+  mutate(ESTUARY = ordered(ESTUARY, level = c(nurseries, "Overall-Est"))) %>%
+  mutate(REGION = ifelse(ESTUARY %in% c("SL", "GAL"), "North",
+                         ifelse(ESTUARY %in% c("MAT"), "Central",
+                                ifelse(ESTUARY %in% c("SA", "ARA/CC"), "South", "Overall-Est")))) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "Central", "South", "Overall-Est"))) 
+
+```
+
+Compare combination of predictive model and proportion of loci used to describe estuary baselines using genetic data.
+
+```{r fig.cap="Fig 5: Assignment accuracy to estuary baselines using genetic data.", fig.height=10, fig.width=10}
+
+# plot results 
+ggplot(MC, aes(x = ESTUARY, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    scale_y_continuous(limits = c(0, 1)) +
+    facet_grid(MODEL ~ train.loci) +
+    labs(x = "estuary", y = "% correctly assigned") +
+    scale_fill_manual(values = c(col_regions, "gold")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/estuary_svm/" & train.loci == 0.75) %>%
+  rename(LOCATION = ESTUARY,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "ESTUARY",
+         DATA = "GENETICS") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/est_genetics.assignm", delim = "/t")
+
+# results svm
+kable(
+  MC %>%
+    filter(MODEL == "results/estuary_svm/") %>%
+    group_by(ESTUARY, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 10a: Mean +/- std assignment accuracy (model: svm),"
+)
+
+
+# results lda
+kable(
+  MC %>%
+    filter(MODEL == "results/estuary_lda/") %>%
+    group_by(ESTUARY, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 10b: Mean +/- std assignment accuracy (model: lda),"
+)
+
+
+```
+
+Predictive model `svm`/top 75% of loci ranked by Fst chosen as best model.
+
+
+**MICROCHEMISTRY DATA**
+
+```{r}
+
+# import microchemistry data
+env <- read_delim("data/POPGEN/BullShark_MetaData.txt", delim = "\t") %>%
+   select(-AGE) %>%
+   select(1:12) %>%
+   separate(SAMPLE_ID, into = c("p1", "p2"), sep = "_") %>%
+   unite(SAMPLE_ID, p1, p2, sep = "-")
+
+missing <- as.data.frame(rowSums(is.na(env))) %>%
+   rename(MISSING = `rowSums(is.na(env))`) %>%
+   mutate(PERC_MISSING = MISSING/11)
+
+env <- bind_cols(env, missing)
+
+env_all <- env %>%
+  filter(PERC_MISSING == 0) %>%
+  separate(SAMPLE_ID, into = c("p1", "p2"), sep = "-") %>%
+  unite(SAMPLE_ID, p1, p2, sep = "_") %>%
+  left_join(strata) %>%
+  filter(SAMPLE_ID %in% AGE0$SAMPLE_ID) %>%
+  select(1:12, POP) %>%
+  filter(!POP == "SA") %>%
+  mutate(POP = as.character(POP))
+
+env_all[env_all == "ARA/CC"] <- "ARA"
+
+write_delim(env_all, "data/POPGEN/microchem_est.csv", delim = ",")
+
+```
+
+Baselines for the microchemistry data set were established by randomly drawing 15 training individuals and assigning the remaining individuals for 30 iterations using all microchemistry variables.
+
+```{r eval=FALSE, echo=TRUE}
+
+assign.MC(x = env,
+          train.inds = 15,
+          iterations = 30,
+          model="svm",
+          dir="results/chem_est_svm/",
+          scaled = FALSE,
+          pca.method = TRUE,
+          multiprocess = TRUE,
+          processors = 35)
+
+assign.MC(x = env,
+          train.inds = 15,
+          iterations = 30,
+          model="lda",
+          dir="results/chem_est_lda/",
+          scaled = FALSE,
+          pca.method = TRUE,
+          multiprocess = TRUE,
+          processors = 35)
+
+```
+
+A total of `r nrow(env)` individuals were used for baseline assessment using microchemistry data.
+
+Assignment accuracy for overall and individual estuaries was determined by evaluating the proportion of test individuals successfully assigned back to their natal estuaries.
+
+```{r include=FALSE}
+
+paths <- c("results/chem_est_svm/", "results/chem_est_lda/")
+
+# calculate assignment accuracy
+baselines_est_chem <- list()
+
+for (p in paths){
+  
+  baselines_est_chem[[p]] <- accuracy.MC.SOL(dir = p)
+
+}
+
+MC <- ldply(baselines_est_chem, data.frame) %>%
+  rename(MODEL = `.id`,
+         `ARA/CC` =  `assign.rate.ARA`,
+         GAL = `assign.rate.GAL`,
+         MAT = `assign.rate.MAT`,
+         SL = `assign.rate.SL`,
+         `Overall-Est` = `assign.rate.all`) %>%
+  gather(key = ESTUARY, value = PERC_ASSIGN, 5:9) %>%
+  mutate(ESTUARY = ordered(ESTUARY, level = c(nurseries1, "Overall-Est"))) %>%
+  mutate(REGION = ifelse(ESTUARY %in% c("SL", "GAL"), "North",
+                         ifelse(ESTUARY %in% c("MAT"), "Central",
+                                ifelse(ESTUARY %in% c("SA", "ARA/CC"), "South", "Overall-Est")))) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "Central", "South", "Overall-Est"))) 
+
+```
+
+Compare which predictive model best describes estuary baselines using microchemistry data.
+
+```{r fig.cap="Figure 5: Assignment accuracy to estuaries (microchemistry data)", fig.height=8, fig.width=3}
+
+ggplot(MC, aes(x = ESTUARY, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    facet_grid(MODEL ~ .) +
+    scale_y_continuous(limits = c(0, 1)) +
+    labs(x = "estuary", y = "% correctly assigned (lda)") +
+    scale_fill_manual(values = c(col_regions, "darkgreen")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/chem_est_lda/") %>%
+  rename(LOCATION = ESTUARY,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "ESTUARY",
+         DATA = "MICROCHEM") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/est_microchem.assignm", delim = "/t")
+
+kable(
+  MC %>%
+    group_by(ESTUARY, MODEL) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = MODEL, value = assign.acc),
+caption = "Table 11: Mean +/- std correct assignment to estuary of origin (microchemistry data)"
+)
+
+
+```
+
+Predictive model `lda` chosen.
+
+
+**COMBINED DATA**
+
+```{r}
+
+# FORMAT MICROCHEM DATA ====
+
+# import microchemistry data
+env <- read_delim("data/POPGEN/BullShark_MetaData.txt", delim = "\t") %>%
+  select(-AGE) %>%
+  select(1:12) %>%
+  separate(SAMPLE_ID, into = c("p1", "p2"), sep = "_") %>%
+  unite(SAMPLE_ID, p1, p2, sep = "-")
+
+# ensure no missing data and LIB_ID to combine with genetic data
+env_all <- as.data.frame(rowSums(is.na(env))) %>%
+  rename(MISSING = `rowSums(is.na(env))`) %>%
+  mutate(PERC_MISSING = MISSING/11) %>%
+  bind_cols(env) %>%
+  filter(PERC_MISSING == 0) %>%
+  select(-MISSING, -PERC_MISSING) %>%
+  separate(SAMPLE_ID, into = c("p1", "p2"), sep = "-") %>%
+  unite(SAMPLE_ID, p1, p2, sep = "_") %>%
+  left_join(strata) %>%
+  filter(LIB_ID %in% AGE0$LIB_ID) %>%
+  select(1:13) 
+
+# FORMAT GENIND DATA to contain indv with microchemistry data ====
+
+# set population level to regions
+setPop(gen_est) <- ~POP
+
+gen_env <- gen_est[row.names(gen_est@tab) %in% env_all$LIB_ID]
+
+# WRITE INPUT FILES FOR ANALYSIS ====
+
+# write env data
+env_data <- as.data.frame(indNames(gen_env)) %>%
+  rename(LIB_ID = `indNames(gen_env)`) %>%
+  left_join(env_all) %>%
+  select(-SAMPLE_ID) %>%
+  separate(LIB_ID, into = c("p1", "p2", "p3", "p4"), sep = "_") %>%
+   unite(LIB_ID, p1, p2, p3, p4, sep = "-")
+
+write_delim(env_data, "data/POPGEN/env_data_est", delim = "\t")
+
+# # write genepop file
+# tidy <- tidy_genomic_data(data = gen_env, filename = NULL)
+# 
+# tidy <- tidy %>%
+#    dplyr::select(1:6)
+# 
+# write_genepop(data = tidy,
+#               filename = "data/POPGEN/CLEgsi_est_env",
+#               genepop.header = "CLE grouper by estuary, major allele frq < 95%")
+# 
+# # import file
+# POPassign <- read.Genepop("data/POPGEN/CLEgsi_est_env_genepop.gen",
+#                            pop.names=c("ARA", "GAL", "MAT", "SL"),
+#                            haploid = FALSE)
+# 
+# POPassignCON <- compile.data(x = POPassign,
+#                              add.x = "data/POPGEN/env_data_est",
+#                              method = "common")
+
+kable(
+  strata(gen_env) %>%
+    count(POP),
+  caption = "Table 12: Number of samples per estuary for combined data set"
+)
+
+```
+
+A total of `r nInd(gen_env)` individuals were used for baseline assessment.
+
+Baselines for the combined data set were established by randomly drawing 15 training individuals and a subset of the top 1%, 5%, 10% ,25%, 50%, 75%, and 100% of of loci ranked by fst and assigning the remaining individuals for 30 iterations for each combination of training individuals and loci and all mirochemistry data.
+
+```{r eval=FALSE, echo=TRUE}
+
+# data not scaled ====
+assign.MC(x = POPassignCON,
+          train.inds = 15,
+          train.loci = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="svm",
+          dir="results/comb_est_svm/",
+          scaled = FALSE,
+          pca.method = "original",
+          multiprocess = TRUE,
+          processors = 35)
+
+assign.MC(x = POPassignCON,
+          train.inds = 15,
+          train.loci = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="lda",
+          dir="results/comb_est_lda/",
+          scaled = FALSE,
+          pca.method = "original",
+          multiprocess = TRUE,
+          processors = 35)
+
+```
+
+Assignment accuracy determined by assessing the proportion of test individuals correctly assigned to their natal estuary.
+
+```{r include=FALSE}
+
+paths <- c("results/comb_est_svm/", "results/comb_est_lda/")
+
+# calculate assignment accuracy
+baselines_est_comb <- list()
+
+for (p in paths){
+  
+  baselines_est_comb[[p]] <- accuracy.MC.SOL(dir = p)
+
+}
+
+MC <- ldply(baselines_est_comb, data.frame) %>%
+  rename(MODEL = `.id`,
+         `ARA/CC` =  `assign.rate.ARA`,
+         GAL = `assign.rate.GAL`,
+         MAT = `assign.rate.MAT`,
+         SL = `assign.rate.SL`,
+         `Overall-Est` = `assign.rate.all`) %>%
+  gather(key = ESTUARY, value = PERC_ASSIGN, 5:9) %>%
+  mutate(ESTUARY = ordered(ESTUARY, level = c(nurseries, "Overall-Est"))) %>%
+  mutate(REGION = ifelse(ESTUARY %in% c("SL", "GAL"), "North",
+                         ifelse(ESTUARY %in% c("MAT"), "Central",
+                                ifelse(ESTUARY %in% c("SA", "ARA", "CC"), "South", "Overall-Est")))) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "Central", "South", "Overall-Est"))) 
+
+```
+
+Compare combination of predictive model and proportion of loci used to describe estuary baselines.
+
+```{r fig.cap="Figure 6: Assignment accuracy to estuary baselines for combined data set", fig.height=10, fig.width=10}
+
+ggplot(MC, aes(x = ESTUARY, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    facet_grid(MODEL ~ train.loci) +
+    scale_y_continuous(limits = c(0, 1)) +
+    labs(x = "estuary", y = "% correctly assigned") +
+    scale_fill_manual(values = c(col_regions, "darkgreen")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/comb_est_lda/" & train.loci == 1) %>%
+  rename(LOCATION = ESTUARY,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "ESTUARY",
+         DATA = "COMBINED") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/est_combined.assignm", delim = "/t")
+
+# results svm
+kable(
+  MC %>%
+    filter(MODEL == "results/comb_est_svm/") %>%
+    group_by(ESTUARY, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 13a: Mean +/- std assignment accuracy (model: svm),"
+)
+
+
+# results lda
+kable(
+  MC %>%
+    filter(MODEL == "results/comb_est_lda/") %>%
+    group_by(ESTUARY, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 13b: Mean +/- std assignment accuracy (model: lda),"
+)
+
+```
+
+Predictive model `lda`/all loci chosen as best model.
+
+
+## Regional baselines (North, Central, South)
+
+**GENETIC DATA**
+
+```{r}
+
+# setPop(gen) <- ~REGION
+# 
+# # remove loci with > 5% missing data
+# temp <- missingno(gen, type = "loci", cutoff = 0.05, quiet = FALSE)
+# 
+# write_delim(as.data.frame(indNames(temp)), "scratch/3reg_gen_genotyped.indv", delim = "\t")
+
+# 
+# # write genepop file
+# tidy <- tidy_genomic_data(data = temp, filename = NULL)
+#  
+# tidy <- tidy %>%
+#    dplyr::select(1:6)
+#  
+# write_genepop(data = tidy,
+#                filename = "data/POPGEN/CLE_by_region",
+#                genepop.header = "CLE grouper by region, major allele frq < 95%")
+#  
+# # import file in assignPOP format
+# POPassign <- read.Genepop("data/POPGEN/CLE_by_region_genepop.gen",
+#                            pop.names = c("South", "North", "Central"), 
+#                            haploid = FALSE)
+
+```
+
+A total of `r nInd(temp)` individuals were used for baseline assessment.
+
+Regional baselines for genetic data were establisehd by randomly drawing 20 training individuals and a subset of the top 1%, 5%, 10%, 25%, 50%, 75%, 90%, and 100% of of loci ranked by fst and assigning the remaining individuals for 30 iterations for each combination of training individuals and loci.
+
+```{r eval=FALSE, echo=TRUE}
+
+assign.MC(x = POPassign,
+          train.inds = 20,
+          train.loci = c(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="svm",
+          pca.method = "original",
+          scaled = FALSE,
+          dir="results/region1_svm/",
+          multiprocess = TRUE,
+          processors = 35)
+
+assign.MC(x = POPassign,
+          train.inds = 20,
+          train.loci = c(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="lda",
+          pca.method = "original",
+          scaled = FALSE,
+          dir="results/region1_lda/",
+          multiprocess = TRUE,
+          processors = 35)
+
+```
+
+Assigment accuracy evaluated by assesing the proportion of individuals successfully assigned back to their region of origin.
+
+```{r fig.cap="Assignment accuracy to regional baselines using genetic data", fig.height=5, fig.width=10}
+
+paths <- c("results/region1_lda/", "results/region1_svm/")
+
+# calculate assignment accuracy
+baselines_region <- list()
+
+for (p in paths){
+  
+  baselines_region[[p]] <- accuracy.MC.SOL(dir = p)
+
+}
+
+MC <- ldply(baselines_region, data.frame) %>%
+  rename(MODEL = `.id`,
+         Central =  `assign.rate.Central`,
+         North = `assign.rate.North`,
+         South = `assign.rate.South`,
+         `Overall-reg3` = `assign.rate.all`) %>%
+  gather(key = REGION, value = PERC_ASSIGN, 5:8) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "Central", "South", "Overall-reg3"))) 
+
+```
+
+Compare combination of predictive model and proportion of loci used to describe estuary baselines.
+
+```{r fig.cap="Figure 7: Assignment accuracy to regional baselines using genetic data", fig.height=10, fig.width=10}
+
+ggplot(MC, aes(x = REGION, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    scale_y_continuous(limits = c(0, 1)) +
+    facet_grid(MODEL ~ train.loci) +
+    labs(x = "region", y = "% correctly assigned (svm)") +
+    scale_fill_manual(values = c(col_regions, "gold")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/region1_svm/" & train.loci == 0.9) %>%
+  rename(LOCATION = REGION,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "REGION-3",
+         DATA = "GENETICS") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/reg3_genetics.assignm", delim = "/t")
+
+# results svm
+kable(
+  MC %>%
+    filter(MODEL == "results/region1_svm/") %>%
+    group_by(REGION, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 14a: Mean +/- std assignment accuracy (model: svm),"
+)
+
+
+# results lda
+kable(
+  MC %>%
+    filter(MODEL == "results/region1_lda/") %>%
+    group_by(REGION, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 14b: Mean +/- std assignment accuracy (model: lda),"
+)
+
+
+```
+
+`svm` model built using 20 individuals and top 90% of loci ranked by Fst produced highest assignment accuracy.
+
+
+**MICROCHEMISTRY DATA**
+
+```{r}
+
+# import microchemistry data
+env <- read_delim("data/POPGEN/BullShark_MetaData.txt", delim = "\t") %>%
+   select(-AGE) %>%
+   select(1:12) %>%
+   separate(SAMPLE_ID, into = c("p1", "p2"), sep = "_") %>%
+   unite(SAMPLE_ID, p1, p2, sep = "-")
+
+missing <- as.data.frame(rowSums(is.na(env))) %>%
+   rename(MISSING = `rowSums(is.na(env))`) %>%
+   mutate(PERC_MISSING = MISSING/11)
+
+env <- bind_cols(env, missing)
+
+env_all <- env %>%
+  filter(PERC_MISSING == 0) %>%
+  separate(SAMPLE_ID, into = c("p1", "p2"), sep = "-") %>%
+  unite(SAMPLE_ID, p1, p2, sep = "_") %>%
+  left_join(strata) %>%
+  filter(SAMPLE_ID %in% AGE0$SAMPLE_ID) %>%
+  select(1:12, REGION) %>%
+  as.data.frame()
+
+write_delim(env_all, "data/POPGEN/microchem_reg.csv", delim = ",")
+
+# env <- read.csv("data/POPGEN/microchem_reg.csv", header = TRUE) %>%
+#   mutate(REGION = as.factor(REGION),
+#          SAMPLE_ID = as.factor(SAMPLE_ID))
+
+```
+
+A total of `r nrow(env)` individuals were used for baseline asessment.
+
+Baselines for the microchemistry data set were established by randomly drawing 20 training individuals and assigning the remaining individuals for 30 iterations (all microchemistry variable used).
+
+```{r eval=FALSE, echo=TRUE}
+
+assign.MC(x = env,
+          train.inds = 20,
+          iterations = 30,
+          model="svm",
+          dir="results/chem_reg_svm/",
+          scaled = FALSE,
+          pca.method = TRUE,
+          multiprocess = TRUE,
+          processors = 35)
+
+assign.MC(x = env,
+          train.inds = 20,
+          iterations = 30,
+          model="lda",
+          dir="results/chem_reg_lda/",
+          scaled = FALSE,
+          pca.method = TRUE,
+          multiprocess = TRUE,
+          processors = 35)
+
+```
+
+Assignment probabilities for microchemistry data set for 30 iterations.
+
+```{r fig.cap = "Assignment accuracy to regional baselines established using microchemistry data (all variables)", fig.height=4, fig.width=4}
+
+paths <- c("results/chem_reg_svm/", "results/chem_reg_lda/")
+
+# calculate assignment accuracy
+baselines_est_chem <- list()
+
+for (p in paths){
+  
+  baselines_est_chem[[p]] <- accuracy.MC.SOL(dir = p)
+
+}
+
+MC <- ldply(baselines_est_chem, data.frame) %>%
+  rename(MODEL = `.id`,
+         South =  `assign.rate.South`,
+         North = `assign.rate.North`,
+         Central = `assign.rate.Central`,
+         `Overall-reg3` = `assign.rate.all`) %>%
+  gather(key = REGION, value = PERC_ASSIGN, 5:8) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "Central", "South", "Overall-reg3"))) 
+
+```
+
+Compare predictive models to determine which best describes regional baselines.
+
+```{r fig.cap = "Figure 8: Assignment accuracy to regional baselines established using microchemistry data (all variables)", fig.height=8, fig.width=3}
+
+ggplot(MC, aes(x = REGION, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    facet_grid(MODEL ~ .) +
+    scale_y_continuous(limits = c(0, 1)) +
+    labs(x = "estuary", y = "% correctly assigned (lda)") +
+    scale_fill_manual(values = c(col_regions, "darkgreen")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/chem_reg_lda/") %>%
+  rename(LOCATION = REGION,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "REGION-3",
+         DATA = "MICROCHEM") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/reg3_microchem.assignm", delim = "/t")
+
+# results svm
+kable(
+  MC %>%
+    group_by(REGION, MODEL) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = MODEL, value = assign.acc),
+  caption = "Table 15: Mean +/- std assignment accuracy (model: svm),"
+)
+
+```
+
+Predictive model `lda` chosen as best model
+
+
+**COMBINED DATA**
+
+```{r}
+
+# FORMAT MICROCHEM DATA ====
+
+# import microchemistry data
+env <- read_delim("data/POPGEN/BullShark_MetaData.txt", delim = "\t") %>%
+  select(-AGE) %>%
+  select(1:12) %>%
+  separate(SAMPLE_ID, into = c("p1", "p2"), sep = "_") %>%
+  unite(SAMPLE_ID, p1, p2, sep = "-")
+
+# ensure no missing data and LIB_ID to combine with genetic data
+env_all <- as.data.frame(rowSums(is.na(env))) %>%
+  rename(MISSING = `rowSums(is.na(env))`) %>%
+  mutate(PERC_MISSING = MISSING/11) %>%
+  bind_cols(env) %>%
+  filter(PERC_MISSING == 0) %>%
+  select(-MISSING, -PERC_MISSING) %>%
+  separate(SAMPLE_ID, into = c("p1", "p2"), sep = "-") %>%
+  unite(SAMPLE_ID, p1, p2, sep = "_") %>%
+  left_join(strata) %>%
+  filter(LIB_ID %in% AGE0$LIB_ID) %>%
+  select(1:13) 
+
+
+# FORMAT GENIND DATA to contain indv with microchemistry data ====
+
+# set population level to regions
+setPop(gen) <- ~REGION
+
+# remove loci with > 5% missing data
+temp <- missingno(gen, type = "loci", cutoff = 0.05, quiet = FALSE)
+
+gen_env <- temp[row.names(temp@tab) %in% env_all$LIB_ID]
+
+write_delim(as.data.frame(indNames(gen_env)), "scratch/3reg_comb.indv")
+
+
+# WRITE INPUT FILES FOR ANALYSIS ====
+
+# write env data
+env_data <- as.data.frame(indNames(gen_env)) %>%
+  rename(LIB_ID = `indNames(gen_env)`) %>%
+  left_join(env_all) %>%
+  select(-SAMPLE_ID) %>%
+  separate(LIB_ID, into = c("p1", "p2", "p3", "p4"), sep = "_") %>%
+   unite(LIB_ID, p1, p2, p3, p4, sep = "-")
+
+write_delim(env_data, "data/POPGEN/env_data_region1", delim = " ")
+
+# # write genepop file
+# tidy <- tidy_genomic_data(data = gen_env, filename = NULL)
+# 
+# tidy <- tidy %>%
+#   dplyr::select(1:6)
+# 
+# write_genepop(data = tidy,
+#               filename = "data/POPGEN/CLEgsi_region1_env",
+#               genepop.header = "CLE grouper by region1uary, major allele frq < 95%")
+# 
+# # IMPORT FILES FOR ANALYSIS ====
+# 
+# POPassign <- read.Genepop("data/POPGEN/CLEgsi_region1_env_genepop.gen",
+#                           pop.names=c("South", "North", "Central"),
+#                           haploid = FALSE)
+# 
+# POPassignCON <- compile.data(x = POPassign,
+#                              add.x = "data/POPGEN/env_data_region1",
+#                              method = "common")
+
+kable(
+  strata(gen_env) %>%
+    count(REGION),
+  caption = "Table 16: Number of individuals per region with microchemistry data and genetic data"
+)
+
+```
+
+A total of `r nInd(gen_env)` individuals were used for baseline assesment
+
+Baselines were calculated by randomly drawing 20 test individuals and 1, 5, 10, 25, 50, 75, and 100% of loci ranked by Fst.
+
+```{r eval=FALSE, echo=TRUE}
+
+assign.MC(x = POPassignCON,
+          train.inds = 20,
+          train.loci = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="svm",
+          dir="results/comb_region1_svm/",
+          scaled = FALSE,
+          pca.method = "original",
+          multiprocess = TRUE,
+          processors = 35)
+
+assign.MC(x = POPassignCON,
+          train.inds = 20,
+          train.loci = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="lda",
+          dir="results/comb_region1_lda/",
+          scaled = FALSE,
+          pca.method = "original",
+          multiprocess = TRUE,
+          processors = 35)
+
+```
+
+Assignment accuracy of baselines was assessed as the proportion of individuals successfully assigned back to their natal regions.
+
+```{r include=FALSE}
+
+paths <- c("results/comb_region1_lda/", "results/comb_region1_svm/")
+
+# calculate assignment accuracy
+baselines_region <- list()
+
+for (p in paths){
+  
+  baselines_region[[p]] <- accuracy.MC.SOL(dir = p)
+
+}
+
+MC <- ldply(baselines_region, data.frame) %>%
+  rename(MODEL = `.id`,
+         Central =  `assign.rate.Central`,
+         North = `assign.rate.North`,
+         South = `assign.rate.South`,
+         `Overall-reg3` = `assign.rate.all`) %>%
+  gather(key = REGION, value = PERC_ASSIGN, 5:8) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "Central", "South", "Overall-reg3"))) 
+
+```
+
+Compare combination of predictive model and proportion of loci used to describe estuary baseline
+
+```{r fig.cap="Figure 9: Assignment accuracy to regional baselines (combined data set)", fig.height=10, fig.width=12}
+
+ggplot(MC, aes(x = REGION, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    scale_y_continuous(limits = c(0, 1)) +
+    facet_grid(MODEL ~ train.loci) +
+    labs(x = "region", y = "% correctly assigned") +
+    scale_fill_manual(values = c(col_regions, "gold")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/comb_region1_svm/" & train.loci == 1) %>%
+  rename(LOCATION = REGION,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "REGION-3",
+         DATA = "COMBINED") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/reg3_combined.assignm", delim = "/t")
+
+
+# results svm
+kable(
+  MC %>%
+    filter(MODEL == "results/comb_region1_svm/") %>%
+    group_by(REGION, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 17a: Mean +/- std assignment accuracy (model: svm),"
+)
+
+
+# results lda
+kable(
+  MC %>%
+    filter(MODEL == "results/comb_region1_lda/") %>%
+    group_by(REGION, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 17b: Mean +/- std assignment accuracy (model: lda),"
+)
+
+```
+
+Baselines built using `svm` and 20 training individuals and all loci chosen as best model.
+
+
+## Regional baselines (North, South)
+
+**GENETIC DATA**
+
+```{r}
+
+# # format data ====
+# 
+# setPop(gen) <- ~REGION2
+# 
+# # remove loci with > 5% missing data
+# temp <- missingno(gen, type = "loci", cutoff = 0.05, quiet = FALSE)
+#
+# # write genepop file
+# tidy <- tidy_genomic_data(data = temp, filename = NULL)
+# 
+# tidy <- tidy %>%
+#    dplyr::select(1:6)
+# 
+# write_genepop(data = tidy,
+#                filename = "data/POPGEN/CLE_by_region2",
+#                genepop.header = "CLE grouper by region, major allele frq < 95%")
+# 
+# # import file in assignPOP format
+# POPassign <- read.Genepop("data/POPGEN/CLE_by_region2_genepop.gen",
+#                            pop.names = c("South", "North"),
+#                            haploid = FALSE)
+
+```
+
+Baselines for genetic data were established by randomly drawing 30 training individuals and a subset of the top 1%, 5%, 10%, 25%, 50%, 75%, 90%, and 100% of of loci ranked by Fst and assigning the remaining individuals for 30 iterations.
+
+```{r eval=FALSE, echo=TRUE}
+
+assign.MC(x = POPassign,
+          train.inds = 30,
+          train.loci = c(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="svm",
+          pca.method = "original",
+          scaled = FALSE,
+          dir="results/region2_svm/",
+          multiprocess = TRUE,
+          processors = 35)
+
+assign.MC(x = POPassign,
+          train.inds = 45,
+          train.loci = c(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="lda",
+          pca.method = "original",
+          scaled = FALSE,
+          dir="results/region2_lda/",
+          multiprocess = TRUE,
+          processors = 35)
+
+```
+
+Efficiency of baselines was assessed as the proportion of individuals successfully assigned back to their natal regions.
+
+```{r include=FALSE}
+
+paths <- c("results/region2_lda/", "results/region2_svm/")
+
+# calculate assignment accuracy
+baselines_region <- list()
+
+for (p in paths){
+  
+  baselines_region[[p]] <- accuracy.MC(dir = p)
+
+}
+
+MC <- ldply(baselines_region, data.frame) %>%
+  rename(MODEL = `.id`,
+         North = `assign.rate.North`,
+         South = `assign.rate.South`,
+         `Overall-reg2` = `assign.rate.all`) %>%
+  gather(key = REGION, value = PERC_ASSIGN, 5:7) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "South", "Overall-reg2"))) 
+
+```
+
+Compare combinations of predictive models and proportion of loci ranked by Fst used to describe regional baselines.
+
+```{r fig.cap="Figure 10: Assignment accuracy to regional baselines (genetic data set)", fig.height=10, fig.width=12}
+
+ggplot(MC, aes(x = REGION, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    scale_y_continuous(limits = c(0, 1)) +
+    facet_grid(MODEL ~ train.loci) +
+    labs(x = "region", y = "% correctly assigned") +
+    scale_fill_manual(values = c(col_regions, "gold")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/region2_lda/" & train.loci == 0.5) %>%
+  rename(LOCATION = REGION,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "REGION-2",
+         DATA = "GENETICS") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/reg2_genetics.assignm", delim = "/t")
+
+# results svm
+kable(
+  MC %>%
+    filter(MODEL == "results/region2_svm/") %>%
+    group_by(REGION, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 18a: Mean +/- std assignment accuracy (model: svm),"
+)
+
+
+# results lda
+kable(
+  MC %>%
+    filter(MODEL == "results/region2_lda/") %>%
+    group_by(REGION, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 18b: Mean +/- std assignment accuracy (model: lda),"
+)
+
+
+```
+
+Assignment accuracy highest for model built using `lda` and 50% of loci ranked by Fst.
+
+
+**MICROCHEMISTRY DATA**
+
+Monte-Carlo cross-validation was used for the assignment test to evaluate if the combined data set has sufficient discriminatory power.
+
+```{r}
+
+# import microchemistry data
+env <- read_delim("data/POPGEN/BullShark_MetaData.txt", delim = "\t") %>%
+   select(-AGE) %>%
+   select(1:12) %>%
+   separate(SAMPLE_ID, into = c("p1", "p2"), sep = "_") %>%
+   unite(SAMPLE_ID, p1, p2, sep = "-")
+
+missing <- as.data.frame(rowSums(is.na(env))) %>%
+   rename(MISSING = `rowSums(is.na(env))`) %>%
+   mutate(PERC_MISSING = MISSING/11)
+
+env <- bind_cols(env, missing)
+
+env_all <- env %>%
+  filter(PERC_MISSING == 0) %>%
+  separate(SAMPLE_ID, into = c("p1", "p2"), sep = "-") %>%
+  unite(SAMPLE_ID, p1, p2, sep = "_") %>%
+  left_join(strata) %>%
+  filter(SAMPLE_ID %in% AGE0$SAMPLE_ID) %>%
+  select(1:12, REGION2) %>%
+  as.data.frame()
+
+write_delim(env_all, "data/POPGEN/microchem_reg2.csv", delim = ",")
+
+# env <- read.csv("data/POPGEN/microchem_reg2.csv", header = TRUE) %>%
+#   mutate(REGION2 = as.factor(REGION2),
+#          SAMPLE_ID = as.factor(SAMPLE_ID))
+
+```
+
+Baselines for the microchemistry data set were established by randomly drawing 20 training individuals and assigning the remaining individuals for 30 iterations.
+
+```{r eval=FALSE, echo=TRUE}
+ 
+assign.MC(x = env,
+          train.inds = 20,
+          iterations = 30,
+          model="svm",
+          dir="results/chem_reg2_svm/",
+          scaled = FALSE,
+          pca.method = TRUE,
+          multiprocess = TRUE,
+          processors = 35)
+
+assign.MC(x = env,
+          train.inds = 20,
+          iterations = 30,
+          model="lda",
+          dir="results/chem_reg2_lda/",
+          scaled = FALSE,
+          pca.method = TRUE,
+          multiprocess = TRUE,
+          processors = 35)
+
+```
+
+Efficiency of baselines assessed as proportion of test individuals correctly assigned to their natal region.
+
+```{r fig.cap="Assignment accuracy to regional baselines (all microchemistry variables)", fig.height=4, fig.width=4}
+
+paths <- c("results/chem_reg2_svm/", "results/chem_reg2_lda/")
+
+# calculate assignment accuracy
+baselines_est_chem <- list()
+
+for (p in paths){
+  
+  baselines_est_chem[[p]] <- accuracy.MC.SOL(dir = p)
+
+}
+
+MC <- ldply(baselines_est_chem, data.frame) %>%
+  rename(MODEL = `.id`,
+         South =  `assign.rate.South`,
+         North = `assign.rate.North`,
+         `Overall-reg2` = `assign.rate.all`) %>%
+  gather(key = REGION, value = PERC_ASSIGN, 5:7) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "South", "Overall-reg2"))) 
+
+```
+
+Compare assignment accuracy among predictive models.
+
+```{r fig.cap="Figure 11: Assignment accuracy to regional baselines (all microchemistry variables)", fig.height=8, fig.width=3}
+
+ggplot(MC, aes(x = REGION, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    facet_grid(MODEL ~ .) +
+    scale_y_continuous(limits = c(0, 1)) +
+    labs(x = "estuary", y = "% correctly assigned") +
+    scale_fill_manual(values = c(col_regions, "darkgreen")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/chem_reg2_lda/") %>%
+  rename(LOCATION = REGION,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "REGION-2",
+         DATA = "MICROCHEM") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/reg2_microchem.assignm", delim = "/t")
+
+kable(
+  MC %>%
+    group_by(REGION, MODEL) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = MODEL, value = assign.acc),
+  caption = "Table 19: Mean +/- std assignment accuracy (model: svm),"
+)
+
+```
+
+`lda` model chosen as best predictive model.
+
+**COMBINED DATA**
+
+```{r}
+
+# # FORMAT MICROCHEM DATA ====
+# 
+# # import microchemistry data
+# env <- read_delim("data/POPGEN/BullShark_MetaData.txt", delim = "\t") %>%
+#   select(-AGE) %>%
+#   select(1:12) %>%
+#   separate(SAMPLE_ID, into = c("p1", "p2"), sep = "_") %>%
+#   unite(SAMPLE_ID, p1, p2, sep = "-")
+# 
+# # ensure no missing data and LIB_ID to combine with genetic data
+# env_all <- as.data.frame(rowSums(is.na(env))) %>%
+#   rename(MISSING = `rowSums(is.na(env))`) %>%
+#   mutate(PERC_MISSING = MISSING/11) %>%
+#   bind_cols(env) %>%
+#   filter(PERC_MISSING == 0) %>%
+#   select(-MISSING, -PERC_MISSING) %>%
+#   separate(SAMPLE_ID, into = c("p1", "p2"), sep = "-") %>%
+#   unite(SAMPLE_ID, p1, p2, sep = "_") %>%
+#   left_join(strata) %>%
+#   filter(LIB_ID %in% AGE0$LIB_ID) %>%
+#   select(1:13) 
+# 
+# # FORMAT GENIND DATA to contain indv with microchemistry data ====
+# 
+# # set population level to regions
+# setPop(gen) <- ~REGION2
+# 
+# # remove loci with > 5% missing data
+# temp <- missingno(gen, type = "loci", cutoff = 0.05, quiet = FALSE)
+# 
+# gen_env <- temp[row.names(temp@tab) %in% env_all$LIB_ID]
+# 
+# # WRITE INPUT FILES FOR ANALYSIS ====
+# 
+# # write env data
+# env_data <- as.data.frame(indNames(gen_env)) %>%
+#   rename(LIB_ID = `indNames(gen_env)`) %>%
+#   left_join(env_all) %>%
+#   select(-SAMPLE_ID) %>%
+#   separate(LIB_ID, into = c("p1", "p2", "p3", "p4"), sep = "_") %>%
+#    unite(LIB_ID, p1, p2, p3, p4, sep = "-")
+# 
+# write_delim(env_data, "data/POPGEN/env_data_region2", delim = "\t")
+#
+# # write genepop file
+# tidy <- tidy_genomic_data(data = gen_env, filename = NULL)
+# 
+# tidy <- tidy %>%
+#   dplyr::select(1:6)
+# 
+# write_genepop(data = tidy,
+#               filename = "data/POPGEN/CLEgsi_region2_env",
+#               genepop.header = "CLE grouper by region2, major allele frq < 95%")
+# 
+# # import file
+# POPassign <- read.Genepop("data/POPGEN/CLEgsi_region2_env_genepop.gen",
+#                           pop.names=c("South", "North"),
+#                           haploid = FALSE)
+# 
+# POPassignCON <- compile.data(x = POPassign,
+#                              add.x = "data/POPGEN/env_data_region2",
+#                              method = "common")
+
+```
+
+Baselines were created using 20 individuals and 1, 5, 10, 25, 50, 75, and 100% of loci ranked by Fst combined with microchemistry data for 30 iterations.
+
+```{r eval=FALSE, echo=TRUE}
+
+assign.MC(x = POPassignCON,
+          train.inds = 20,
+          train.loci = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="svm",
+          dir="results/comb_region2_svm/",
+          scaled = FALSE,
+          pca.method = "original",
+          multiprocess = TRUE,
+          processors = 35)
+
+assign.MC(x = POPassignCON,
+          train.inds = 20,
+          train.loci = c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1),
+          loci.sample = "fst",
+          iterations = 30,
+          model="lda",
+          dir="results/comb_region2_lda/",
+          scaled = FALSE,
+          pca.method = "original",
+          multiprocess = TRUE,
+          processors = 35)
+
+```
+
+Efficiency of baselines was determined by assessing the proportion of individuals assigned back to their region of origin.
+
+```{r include=FALSE}
+
+paths <- c("results/comb_region2_lda/", "results/comb_region2_svm/")
+
+# calculate assignment accuracy
+baselines_region <- list()
+
+for (p in paths){
+  
+  baselines_region[[p]] <- accuracy.MC.SOL(dir = p)
+
+}
+
+MC <- ldply(baselines_region, data.frame) %>%
+  rename(MODEL = `.id`,
+         North = `assign.rate.North`,
+         South = `assign.rate.South`,
+         `Overall-reg2` = `assign.rate.all`) %>%
+  gather(key = REGION, value = PERC_ASSIGN, 5:7) %>%
+  mutate(REGION = ordered(REGION, level = c("North", "Central", "South", "Overall-reg2"))) 
+
+```
+
+Compare combinations of predictive model and proportion of loci used to describe estuary baselines.
+
+```{r fig.cap="Figure 12: Assignment accuracy of regional baselines for combined data set", fig.height=10, fig.width=12}
+
+ggplot(MC, aes(x = REGION, y = PERC_ASSIGN, fill = REGION)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+    scale_y_continuous(limits = c(0, 1)) +
+    facet_grid(MODEL ~ train.loci) +
+    labs(x = "region", y = "% correctly assigned (svm)") +
+    scale_fill_manual(values = c(col_regions, "gold")) +
+    theme_facet +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# write data frame with optimum model
+df <- MC %>%
+  filter(MODEL == "results/comb_region2_lda/" & train.loci == 1) %>%
+  rename(LOCATION = REGION,
+         ASSIGNM_RATE = PERC_ASSIGN) %>%
+  mutate(ASSIGN_LEVEL = "REGION-2",
+         DATA = "COMBINED") %>%
+  select(LOCATION, ASSIGNM_RATE, DATA, ASSIGN_LEVEL)
+
+write_delim(df, "results/reg2_combined.assignm", delim = "/t")
+
+# results svm
+kable(
+  MC %>%
+    filter(MODEL == "results/comb_region2_svm/") %>%
+    group_by(REGION, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 20a: Mean +/- std assignment accuracy (model: svm),"
+)
+
+
+# results lda
+kable(
+  MC %>%
+    filter(MODEL == "results/comb_region2_lda/") %>%
+    group_by(REGION, train.loci) %>%
+    summarize(mean = round(mean(PERC_ASSIGN)*100, digits = 1),
+            std = round(sd(PERC_ASSIGN)*100, digits = 1)) %>%
+    unite(assign.acc, mean, std, sep = " +/- ") %>%
+    spread(key = train.loci, value = assign.acc),
+  caption = "Table 20b: Mean +/- std assignment accuracy (model: lda),"
+)
+
+
+```
+
+Assignment accuracy was highest to baselines created using `lda` model and all loci.
+
+
+# Comparison of assignment success across data sets and regional groupings
+
+Compare assignment accuracy for genetics, microchemistry and combined data sets for baselines grouping individuals by estuary and three vs. two regions.
+
+```{r fig.cap="Figure 13: Assignment accuracy to baselines using combined data set", fig.height=8, fig.width=7}
+
+
+# MICROCHEMISTRY DATA SET ====
+est <- read_delim("results/est_microchem.assignm", delim = "/")
+
+reg3 <- read_delim("results/reg3_microchem.assignm", delim = "/")
+
+reg2 <- read_delim("results/reg2_microchem.assignm", delim = "/")
+
+assignm_chem <- bind_rows(est, reg2, reg3)
+
+
+# GENETICS DATA SET =====
+est <- read_delim("results/est_genetics.assignm", delim = "/")
+
+reg3 <- read_delim("results/reg3_genetics.assignm", delim = "/")
+
+reg2 <- read_delim("results/reg2_genetics.assignm", delim = "/")
+
+assignm_gen <- bind_rows(est, reg2, reg3) 
+
+
+# COMBINED DATA SET ====
+est <- read_delim("results/est_combined.assignm", delim = "/")
+
+reg3 <- read_delim("results/reg3_combined.assignm", delim = "/")
+
+reg2 <- read_delim("results/reg2_combined.assignm", delim = "/")
+
+assignm_comb <- bind_rows(est, reg2, reg3)
+
+
+# RESULTS SUMMARY ====
+assignm <- bind_rows(assignm_chem, assignm_gen, assignm_comb) %>%
+  mutate(DATA = ordered(DATA, levels = c("GENETICS", "MICROCHEM", "COMBINED")),
+         LOCATION = ordered(LOCATION, 
+                            levels = c("ARA/CC", "MAT", "GAL", "SL", "Overall-Est", "South", "Central", "North", "Overall-reg3", "Overall-reg2")),
+         ASSIGN_LEVEL = ordered(ASSIGN_LEVEL, levels = c("ESTUARY", "REGION-3", "REGION-2")))
+  
+
+write_delim(assignm, "results/all.assignm", delim = "\t")
+
+# plot summary figure 
+ggplot(assignm, aes(x = LOCATION, y = ASSIGNM_RATE, fill = LOCATION)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.75, color = "black") +
+    geom_jitter(width = 0.1, shape = 21, size = 2, color = "black") +
+  facet_grid(DATA ~ ASSIGN_LEVEL, drop = TRUE, scales = "free_x", space = "free") +
+  labs(x = "Baseline", y = "Assignment accuracy") +
+  scale_fill_manual(values = c("gold", "darkorange", "forestgreen", "forestgreen", "lightblue",
+                               "gold", "darkorange", "forestgreen", "lightblue",
+                               "lightblue")) +
+  theme_facet +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.position = "none")
+
+```
+
