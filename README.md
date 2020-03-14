@@ -1,4 +1,6 @@
-*Raw reads will be uploaded to Short Read Archive (SRA) once analysis of separate project including individuals from data set presented here is complete. Raw and filtered `VCF` files are available from O'Leary/Portnoy upon request.*
+[![DOI](https://zenodo.org/badge/155273343.svg)](https://zenodo.org/badge/latestdoi/155273343)
+
+*Raw reads have been submitted to Short Read Archive (SRA) as BioProject PRJNA612548 (SRA accession SAMN14377002).*
 
 Extended methods and results for baseline testing are found in
 
